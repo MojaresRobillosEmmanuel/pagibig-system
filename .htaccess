@@ -1,0 +1,27 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+# Set default character set
+AddDefaultCharset UTF-8
+
+# Prevent directory listing
+Options -Indexes
+
+# PHP error handling for development
+php_flag display_errors on
+php_value error_reporting E_ALL
+
+# Cache control for static files
+<FilesMatch "\.(js|css|jpg|png|gif|ico)$">
+  Header set Cache-Control "max-age=3600, public"
+</FilesMatch>
+
+# No cache for PHP files (especially API endpoints)
+<FilesMatch "\.php$">
+  Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+  Header set Pragma "no-cache"
+  Header set Expires "0"
+</FilesMatch>
+

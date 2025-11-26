@@ -1,0 +1,135 @@
+/* Main Content Styles */
+html {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.content {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 1;
+    margin-left: 0 !important;
+    padding: 20px;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    width: auto !important;
+    overflow-y: auto;
+}
+
+/* Table Container */
+.table-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-top: 20px;
+}
+
+/* Table Styles */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    padding: 15px;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    padding: 12px 15px;
+    color: #212529;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+/* Specific table column styles */
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    width: 150px;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+    width: 80px;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3),
+.table th:nth-child(4),
+.table td:nth-child(4),
+.table th:nth-child(5),
+.table td:nth-child(5) {
+    width: 120px;
+    text-transform: uppercase;
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6),
+.table th:nth-child(7),
+.table td:nth-child(7) {
+    width: 70px;
+    text-align: right;
+}
+
+.table th:nth-child(8),
+.table td:nth-child(8) {
+    width: 150px;
+}
+
+.table th:nth-child(9),
+.table td:nth-child(9) {
+    width: 100px;
+}
+
+.table th:nth-child(10),
+.table td:nth-child(10) {
+    width: 100px;
+    text-align: center;
+}
+
+/* Page Title Styles */
+.content h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.content h5.mt-4 {
+    color: #495057;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+/* Responsive Table */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    .content {
+        margin-left: 0;
+        padding: 15px;
+    }
+}

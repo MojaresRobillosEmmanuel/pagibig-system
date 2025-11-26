@@ -1,0 +1,63 @@
+[11-Nov-2025 08:26:14 Europe/Berlin] Raw input received: {
+    "tin":  "123456789000",
+    "first_name":  "USER",
+    "birthdate":  "05/10/85",
+    "pagibig_number":  "999988776655",
+    "id_number":  "5555",
+    "middle_name":  "T",
+    "last_name":  "TEST"
+}
+[11-Nov-2025 08:26:14 Europe/Berlin] Creating STL database via main connection...
+[11-Nov-2025 08:26:14 Europe/Berlin] STL database creation completed
+[11-Nov-2025 08:26:14 Europe/Berlin] STL connection established
+[11-Nov-2025 08:26:14 Europe/Berlin] Creating selected_stl table...
+[11-Nov-2025 08:26:14 Europe/Berlin] STL table created successfully
+[11-Nov-2025 08:26:14 Europe/Berlin] Formatted date: 1985-05-10 (from 05/10/85)
+[11-Nov-2025 08:26:14 Europe/Berlin] Preparing STL insert: INSERT INTO selected_stl (pagibig_no, id_number, date_added) VALUES (?, ?, NOW())
+[11-Nov-2025 08:26:14 Europe/Berlin] STL Connection status - Host: Connected
+[11-Nov-2025 08:26:14 Europe/Berlin] Binding params: pagibig_no=999988776655, id_number=5555
+[11-Nov-2025 08:26:14 Europe/Berlin] STL insert successful for pagibig: 999988776655
+[11-Nov-2025 08:31:04 Europe/Berlin] Raw input received: {"pagibig_number":"021154877833","id_number":"02","last_name":"EMMANUEL","first_name":"DELA CRUZ","middle_name":"P","tin":"009921831000","birthdate":"01/20/01"}
+[11-Nov-2025 08:31:04 Europe/Berlin] Creating STL database via main connection...
+[11-Nov-2025 08:31:04 Europe/Berlin] STL database creation completed
+[11-Nov-2025 08:31:04 Europe/Berlin] STL connection established
+[11-Nov-2025 08:31:04 Europe/Berlin] Creating selected_stl table...
+[11-Nov-2025 08:31:04 Europe/Berlin] STL table created successfully
+[11-Nov-2025 08:31:04 Europe/Berlin] Formatted date: 2001-01-20 (from 01/20/01)
+[11-Nov-2025 08:31:04 Europe/Berlin] Preparing STL insert: INSERT INTO selected_stl (pagibig_no, id_number, date_added) VALUES (?, ?, NOW())
+[11-Nov-2025 08:31:04 Europe/Berlin] STL Connection status - Host: Connected
+[11-Nov-2025 08:31:04 Europe/Berlin] Binding params: pagibig_no=021154877833, id_number=02
+[11-Nov-2025 08:31:04 Europe/Berlin] STL insert successful for pagibig: 021154877833
+[11-Nov-2025 10:22:00 Europe/Berlin] Raw input received: {"pagibig_number":"887432141231","id_number":"0991","last_name":"MORAN","first_name":"ARIEL","middle_name":"R","tin":"882731239000","birthdate":"04/20/05"}
+[11-Nov-2025 10:22:00 Europe/Berlin] Creating STL database via main connection...
+[11-Nov-2025 10:22:00 Europe/Berlin] STL database creation completed
+[11-Nov-2025 10:22:00 Europe/Berlin] STL connection established
+[11-Nov-2025 10:22:00 Europe/Berlin] Creating selected_stl table...
+[11-Nov-2025 10:22:00 Europe/Berlin] STL table created successfully
+[11-Nov-2025 10:22:00 Europe/Berlin] Formatted date: 2005-04-20 (from 04/20/05)
+[11-Nov-2025 10:22:00 Europe/Berlin] Preparing STL insert: INSERT INTO selected_stl (pagibig_no, id_number, date_added) VALUES (?, ?, NOW())
+[11-Nov-2025 10:22:00 Europe/Berlin] STL Connection status - Host: Connected
+[11-Nov-2025 10:22:00 Europe/Berlin] Binding params: pagibig_no=887432141231, id_number=0991
+[11-Nov-2025 10:22:01 Europe/Berlin] STL insert successful for pagibig: 887432141231
+[12-Nov-2025 03:18:06 Europe/Berlin] Raw input received: {"pagibig_number":"344322436654","id_number":"0887","last_name":"JEROME","first_name":"JASTINE","middle_name":"R","tin":"887364342000","birthdate":"06/08/01"}
+[12-Nov-2025 03:18:06 Europe/Berlin] Creating STL database via main connection...
+[12-Nov-2025 03:18:06 Europe/Berlin] STL database creation completed
+[12-Nov-2025 03:18:06 Europe/Berlin] STL connection established
+[12-Nov-2025 03:18:06 Europe/Berlin] Creating selected_stl table...
+[12-Nov-2025 03:18:06 Europe/Berlin] STL table created successfully
+[12-Nov-2025 03:18:06 Europe/Berlin] Formatted date: 2001-06-08 (from 06/08/01)
+[12-Nov-2025 03:18:06 Europe/Berlin] Preparing STL insert: INSERT INTO selected_stl (pagibig_no, id_number, date_added) VALUES (?, ?, NOW())
+[12-Nov-2025 03:18:06 Europe/Berlin] STL Connection status - Host: Connected
+[12-Nov-2025 03:18:06 Europe/Berlin] Binding params: pagibig_no=344322436654, id_number=0887
+[12-Nov-2025 03:18:06 Europe/Berlin] STL insert successful for pagibig: 344322436654
+[12-Nov-2025 04:00:40 Europe/Berlin] Raw input received: {"pagibig_number":"154466582544","id_number":"9882","last_name":"SHIN","first_name":"MORI","middle_name":"T","tin":"872499123000","birthdate":"09/09/05"}
+[12-Nov-2025 04:00:40 Europe/Berlin] Creating STL database via main connection...
+[12-Nov-2025 04:00:40 Europe/Berlin] STL database creation completed
+[12-Nov-2025 04:00:40 Europe/Berlin] STL connection established
+[12-Nov-2025 04:00:40 Europe/Berlin] Creating selected_stl table...
+[12-Nov-2025 04:00:40 Europe/Berlin] STL table created successfully
+[12-Nov-2025 04:00:40 Europe/Berlin] Formatted date: 2005-09-09 (from 09/09/05)
+[12-Nov-2025 04:00:40 Europe/Berlin] Preparing STL insert: INSERT INTO selected_stl (pagibig_no, id_number, date_added) VALUES (?, ?, NOW())
+[12-Nov-2025 04:00:40 Europe/Berlin] STL Connection status - Host: Connected
+[12-Nov-2025 04:00:40 Europe/Berlin] Binding params: pagibig_no=154466582544, id_number=9882
+[12-Nov-2025 04:00:40 Europe/Berlin] STL insert successful for pagibig: 154466582544

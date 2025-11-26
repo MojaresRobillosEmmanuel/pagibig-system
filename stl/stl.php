@@ -1,0 +1,1531 @@
+<?php
+// Start session first, before any output
+session_start();
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+  header('Location: ../login.php');
+  exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>STL Management</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <!-- Sidebar CSS -->
+  <link rel="stylesheet" href="../asset/sidebar/sidebar.css">
+  <!-- SheetJS -->
+   <!-- In your header -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- SheetJS (XLSX) library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  /* Ensure proper layout visibility */
+  * {
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+  
+  body {
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .sidebar {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 270px !important;
+    flex-shrink: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
+  }
+  
+  .content {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 1;
+    margin-left: 0 !important;
+    padding: 20px;
+    width: auto !important;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    overflow-y: auto;
+  }
+  
+  /* Make the table container scrollable */
+  .table-responsive {
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+  }
+  
+  /* Thin custom scrollbar for table only */
+  .table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  .table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  
+  .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+</style>
+</head>
+<body style="display: flex !important; visibility: visible !important; opacity: 1 !important;">
+
+  <!-- Include Sidebar OUTSIDE content area -->
+  <?php include 'sidebar.php'; ?>
+
+  <div class="content" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
+    <!-- STL specific modals -->
+    <?php include 'modals/register-employee-modal.php'; ?>
+    <?php include 'modals/employee_edit_modal.php'; ?>
+
+    <h3>Short Term Loan (STL)</h3>
+    <div class="d-flex justify-content-end align-items-center mt-4">
+      <!-- Right side controls -->
+      <div class="d-flex align-items-center">
+        <label for="rowsPerPage" class="me-3 mb-0 small">Show</label>
+        <select id="rowsPerPage" class="form-select form-select-sm me-3" style="width: auto;">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="0">All</option>
+        </select>
+        <!-- Small search box aligned to the right upper side -->
+        <div style="max-width: 240px; width:100%; margin-bottom: 1rem;">
+          <input type="search" id="searchInput" class="form-control form-control-sm" placeholder="Search employee name">
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable Table Container -->
+    <div class="table-responsive" style="max-height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #dee2e6; border-radius: 0.25rem;">
+      <table class="table table-bordered mb-0" id="selectedEmployeesTable">
+        <thead style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa;">
+          <tr>
+            <th>Pag-IBIG #</th>
+            <th>ID #</th>
+            <th>Last Name</th>
+            <th>First Name</th>
+            <th>Middle Name</th>
+            <th>EE</th>
+            <th>ER</th>
+            <th>TIN</th>
+            <th>Birthdate</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); border: none;">
+          <h5 class="modal-title text-white" id="editModalLabel">
+            <i class="fas fa-user-edit me-2"></i>Employee Details
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="background-color: #f8f9fa; padding: 30px;">
+          <form id="editForm">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="edit_id_no" class="form-label fw-bold">ID Number:</label>
+                <input type="text" class="form-control" id="edit_id_no" name="id_no" style="background-color: #e9ecef;" readonly>
+              </div>
+              <div class="col-md-6">
+                <label for="edit_pagibig_no" class="form-label fw-bold">Pag-IBIG Number:</label>
+                <input type="text" class="form-control" id="edit_pagibig_no" name="pagibig_no" style="background-color: #e9ecef;" readonly>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="edit_last_name" class="form-label fw-bold">Last Name:</label>
+                <input type="text" class="form-control" id="edit_last_name" name="last_name">
+              </div>
+              <div class="col-md-6">
+                <label for="edit_first_name" class="form-label fw-bold">First Name:</label>
+                <input type="text" class="form-control" id="edit_first_name" name="first_name">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="edit_middle_name" class="form-label fw-bold">Middle Name:</label>
+                <input type="text" class="form-control" id="edit_middle_name" name="middle_name">
+              </div>
+              <div class="col-md-6">
+                <label for="edit_tin" class="form-label fw-bold">TIN:</label>
+                <input type="text" class="form-control" id="edit_tin" name="tin">
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="edit_birthdate" class="form-label fw-bold">Birthdate:</label>
+                <input type="date" class="form-control" id="edit_birthdate" name="birthdate">
+              </div>
+            </div>
+
+            <div class="alert alert-info" style="border-left: 4px solid #0066cc; border-radius: 4px;">
+              <i class="fas fa-info-circle me-2" style="color: #0066cc;"></i>
+              <strong>Note:</strong> ID Number and Pag-IBIG Number are read-only fields. You can edit other employee information.
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6; padding: 20px;">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="padding: 8px 20px;">
+            <i class="fas fa-times me-2"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveEmployeeChanges()" style="padding: 8px 20px; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); border: none;">
+            <i class="fas fa-save me-2"></i>Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit ER Modal -->
+  <div class="modal fade" id="editERModal" tabindex="-1" aria-labelledby="editERModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editERModalLabel">Edit ER Value</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editER_pagibig_no">
+          <div class="mb-3">
+            <label for="editER_value" class="form-label">ER Amount</label>
+            <input type="number" class="form-control" id="editER_value" step="0.01" min="0">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveERValue()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load jQuery first -->
+  </div>
+
+  <!-- Select Employees Modal -->
+  <!-- REMOVED - Buttons removed from UI -->
+
+  <!-- Active Employees Modal -->
+  <!-- REMOVED - Buttons removed from UI -->
+
+  <!-- Inactive Employees Modal -->
+  <!-- REMOVED - Buttons removed from UI -->
+
+  <!-- Save Modal -->
+  <div class="modal fade" id="saveModal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="saveModalLabel">Generate Excel File</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="month" class="form-label">Select Month</label>
+            <select class="form-select" id="month" required>
+              <option value="">Choose...</option>
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>
+              <option value="April">April</option>
+              <option value="May">May</option>
+              <option value="June">June</option>
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November">November</option>
+              <option value="December">December</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="yearInput" class="form-label">Enter Year</label>
+            <input type="number" class="form-control" id="yearInput" required min="2020" max="2099">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btnGenerateExcel">Generate Excel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Employees Modal (for selection when creating) -->
+  <div class="modal fade" id="activeEmployeesModal" tabindex="-1" aria-labelledby="activeEmployeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="activeEmployeesModalLabel">
+            <i class="fas fa-users me-2"></i>Select Active Employees
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3 d-flex justify-content-between align-items-center">
+            <input type="text" class="form-control" id="activeEmployeesSearch" placeholder="Search employees..." style="max-width: 400px;">
+            <button class="btn btn-sm btn-primary" id="selectAllActiveBtn">Select All</button>
+          </div>
+          <div id="activeEmployeesLoadingSpinner" class="text-center">
+            <div class="spinner-border text-success" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-hover" id="activeEmployeesTable">
+              <thead style="position: sticky; top: 0; background-color: #f8f9fa;">
+                <tr>
+                  <th style="width: 50px;">SELECT</th>
+                  <th>NAME</th>
+                  <th>ID NUMBER</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="activeEmployeesTableBody">
+                <tr>
+                  <td colspan="4" class="text-center text-muted">Loading employees...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-3">
+            <span id="activeEmployeesCount">0 employees selected</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success" id="activeEmployeesAddBtn">Add Selected</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Employees Management Modal (for viewing and deactivating) -->
+  <div class="modal fade" id="activeEmployeesManagementModal" tabindex="-1" aria-labelledby="activeEmployeesManagementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="activeEmployeesManagementModalLabel">
+            <i class="fas fa-users me-2"></i>Active Employees (STL System)
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="activeEmployeesManagementLoadingSpinner" class="text-center">
+            <div class="spinner-border text-success" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div class="list-group" id="activeEmployeesManagementList">
+            <!-- List will be populated dynamically -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inactive Employees Modal -->
+  <div class="modal fade" id="inactiveEmployeesModal" tabindex="-1" aria-labelledby="inactiveEmployeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="inactiveEmployeesModalLabel">
+            <i class="fas fa-user-times me-2"></i>Inactive Employees (STL System)
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="inactiveLoadingSpinner" class="text-center">
+            <div class="spinner-border text-danger" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div class="list-group" id="inactiveEmployeesList">
+            <!-- List will be populated dynamically -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Popper.js is required for Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- SheetJS (XLSX) library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- Your custom scripts -->
+  <script src="../assets/js/script.js?v=20251111"></script>
+  <script src="./js/utilities.js?v=20251111"></script> <!-- STL utilities -->
+  <script src="./js/employee-management.js?v=20251112-remove-button"></script> <!-- STL-specific logic -->
+  <script src="./js/register-validation.js?v=20251112-fix-auto-add"></script> <!-- STL registration validation -->
+  <script src="./js/modal-handlers.js?v=20251111"></script> <!-- STL modal handlers -->
+  
+  <!-- Verify scripts loaded successfully -->
+  <script>
+    console.log('=== STL Script Loading Verification ===');
+    console.log('loadEmployees function:', typeof window.loadEmployees);
+    console.log('displayEmployees function:', typeof window.displayEmployees);
+    console.log('formatPagibigNumber function:', typeof window.formatPagibigNumber);
+    console.log('saveTableState function:', typeof window.saveTableState);
+    console.log('loadTableState function:', typeof window.loadTableState);
+    
+    // Make functions globally accessible if they exist
+    if (typeof loadEmployees !== 'undefined') {
+      window.loadEmployees = loadEmployees;
+      console.log('✓ loadEmployees is accessible');
+    } else {
+      console.warn('✗ loadEmployees not yet available - scripts may still be loading');
+    }
+  </script>
+  
+  <!-- Initialize Bootstrap tooltips and popovers -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Global modal instances store
+        window.modalInstances = {};
+
+        function initializeModal(modalEl) {
+            if (!modalEl || !modalEl.id) return;
+
+            try {
+                // Create modal instance with consistent configuration
+                const modalInstance = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false,
+                    focus: true
+                });
+
+                // Store instance globally
+                window.modalInstances[modalEl.id] = modalInstance;
+
+                // Setup modal event handlers with error boundaries
+                const setupModalEvents = (modal) => {
+                    const events = ['show', 'shown', 'hide', 'hidden'];
+                    events.forEach(event => {
+                        modal.addEventListener(`${event}.bs.modal`, function(e) {
+                            try {
+                                // Handle each event type
+                                switch(event) {
+                                    case 'shown':
+                                        const firstInput = this.querySelector('input:not([type="hidden"])');
+                                        if (firstInput) firstInput.focus();
+                                        break;
+                                    case 'hidden':
+                                        const form = this.querySelector('form');
+                                        if (form) form.reset();
+                                        break;
+                                }
+                            } catch (err) {
+                                console.error(`Error in modal ${event} event:`, err);
+                            }
+                        });
+                    });
+                };
+
+                setupModalEvents(modalEl);
+                return modalInstance;
+            } catch (error) {
+                console.error(`Failed to initialize modal ${modalEl.id}:`, error);
+                return null;
+            }
+        }
+
+        // Initialize all modals in the document
+        document.querySelectorAll('.modal').forEach(initializeModal);
+
+        // Setup modal triggers with error handling
+        document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                try {
+                    const targetId = this.getAttribute('data-bs-target') || this.getAttribute('href');
+                    if (!targetId) throw new Error('No target modal specified');
+
+                    const modalEl = document.querySelector(targetId);
+                    if (!modalEl) throw new Error(`Modal not found: ${targetId}`);
+
+                    const modalInstance = window.modalInstances[modalEl.id] || initializeModal(modalEl);
+                    if (modalInstance) modalInstance.show();
+                } catch (error) {
+                    console.error('Modal trigger error:', error);
+                }
+            });
+        });
+    });
+  </script>
+
+  <script>
+    // Function to load active employees for management (deactivation)
+    function loadSTLActiveEmployeesForManagement() {
+      const activeEmployeesList = document.getElementById('activeEmployeesManagementList');
+      const loadingSpinner = document.getElementById('activeEmployeesManagementLoadingSpinner');
+      
+      if (!activeEmployeesList) {
+        console.error('activeEmployeesManagementList element not found');
+        return;
+      }
+      
+      loadingSpinner.style.display = 'block';
+      activeEmployeesList.innerHTML = '';
+
+      fetch('./includes/get_stl_active_employees.php')
+        .then(res => res.json())
+        .then(data => {
+          loadingSpinner.style.display = 'none';
+          
+          if (data.status !== 'success' || !data.data || !data.data.employees || data.data.employees.length === 0) {
+            activeEmployeesList.innerHTML = '<div class="list-group-item text-center text-muted">No active STL employees found</div>';
+            return;
+          }
+
+          activeEmployeesList.innerHTML = '';
+
+          data.data.employees.forEach(employee => {
+            const listItem = document.createElement('div');
+            listItem.className = 'list-group-item';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'd-flex justify-content-between align-items-start';
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'flex-grow-1';
+            
+            const nameSpan = document.createElement('h6');
+            nameSpan.className = 'mb-1 fw-bold';
+            
+            const nameLink = document.createElement('a');
+            nameLink.href = '#';
+            nameLink.textContent = `${employee.last_name}, ${employee.first_name}${employee.middle_name ? ' ' + employee.middle_name : ''}`;
+            nameLink.style.color = 'black';
+            nameLink.style.textDecoration = 'none';
+            nameLink.style.cursor = 'pointer';
+            nameLink.onclick = (e) => {
+              e.preventDefault();
+              openEmployeeEditModal(employee);
+            };
+            nameSpan.appendChild(nameLink);
+            
+            const detailsSpan = document.createElement('small');
+            detailsSpan.className = 'text-muted d-block';
+            detailsSpan.innerHTML = `
+              <span class="badge bg-info me-2">Pag-IBIG: ${employee.pagibig_number || 'N/A'}</span>
+              <span class="badge bg-secondary me-2">ID: ${employee.id_number || 'N/A'}</span>
+              <span class="badge bg-warning">Birthdate: ${employee.birthdate || 'N/A'}</span>
+            `;
+            
+            infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(detailsSpan);
+            
+            // Create deactivate button
+            const deactivateBtn = document.createElement('button');
+            deactivateBtn.className = 'btn btn-danger btn-sm ms-3';
+            deactivateBtn.innerHTML = '<i class="fas fa-user-times me-1"></i> Deactivate';
+            deactivateBtn.title = 'Deactivate employee';
+            deactivateBtn.onclick = (e) => {
+              e.preventDefault();
+              if (confirm(`Are you sure you want to deactivate ${employee.last_name}, ${employee.first_name}?`)) {
+                deactivateSTLEmployee(employee.id, listItem, employee.last_name, employee.first_name);
+              }
+            };
+            
+            contentDiv.appendChild(infoDiv);
+            contentDiv.appendChild(deactivateBtn);
+            listItem.appendChild(contentDiv);
+            activeEmployeesList.appendChild(listItem);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading STL active employees for management:', error);
+          loadingSpinner.style.display = 'none';
+          activeEmployeesList.innerHTML = '<div class="list-group-item text-center text-danger">Error loading employees</div>';
+        });
+    }
+
+    // Function to load STL inactive employees
+    function loadSTLInactiveEmployees() {
+      const inactiveEmployeesList = document.getElementById('inactiveEmployeesList');
+      const inactiveLoadingSpinner = document.getElementById('inactiveLoadingSpinner');
+      
+      if (!inactiveEmployeesList) {
+        console.error('inactiveEmployeesList element not found');
+        return;
+      }
+      
+      inactiveLoadingSpinner.style.display = 'block';
+      inactiveEmployeesList.innerHTML = '';
+
+      fetch('./includes/get_stl_inactive_employees.php')
+        .then(res => res.json())
+        .then(data => {
+          inactiveLoadingSpinner.style.display = 'none';
+          
+          // Handle both response formats
+          const employees = data.data && data.data.employees ? data.data.employees : (Array.isArray(data.data) ? data.data : []);
+          
+          if (!data.success || !employees || employees.length === 0) {
+            inactiveEmployeesList.innerHTML = '<div class="list-group-item text-center text-muted">No inactive STL employees found</div>';
+            return;
+          }
+
+          inactiveEmployeesList.innerHTML = '';
+
+          employees.forEach(employee => {
+            const listItem = document.createElement('div');
+            listItem.className = 'list-group-item';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'd-flex justify-content-between align-items-start';
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'flex-grow-1';
+            
+            const nameSpan = document.createElement('h6');
+            nameSpan.className = 'mb-1 fw-bold';
+            
+            const nameLink = document.createElement('a');
+            nameLink.href = '#';
+            nameLink.textContent = `${employee.last_name}, ${employee.first_name}${employee.middle_name ? ' ' + employee.middle_name : ''}`;
+            nameLink.style.color = 'black';
+            nameLink.style.textDecoration = 'none';
+            nameLink.style.cursor = 'pointer';
+            nameLink.onclick = (e) => {
+              e.preventDefault();
+              openEmployeeEditModal(employee);
+            };
+            nameSpan.appendChild(nameLink);
+            
+            const detailsSpan = document.createElement('small');
+            detailsSpan.className = 'text-muted d-block';
+            detailsSpan.innerHTML = `
+              <span class="badge bg-info me-2">Pag-IBIG: ${employee.pagibig_number || 'N/A'}</span>
+              <span class="badge bg-secondary me-2">ID: ${employee.id_number || 'N/A'}</span>
+              <span class="badge bg-warning">Birthdate: ${employee.birthdate || 'N/A'}</span>
+            `;
+            
+            infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(detailsSpan);
+            
+            // Create reactivate button
+            const reactivateBtn = document.createElement('button');
+            reactivateBtn.className = 'btn btn-success btn-sm ms-3';
+            reactivateBtn.innerHTML = '<i class="fas fa-user-check me-1"></i> Reactivate';
+            reactivateBtn.title = 'Reactivate employee';
+            reactivateBtn.onclick = (e) => {
+              e.preventDefault();
+              if (confirm(`Are you sure you want to reactivate ${employee.last_name}, ${employee.first_name}?`)) {
+                reactivateSTLEmployee(employee.id, listItem, employee.last_name, employee.first_name);
+              }
+            };
+            
+            contentDiv.appendChild(infoDiv);
+            contentDiv.appendChild(reactivateBtn);
+            listItem.appendChild(contentDiv);
+            inactiveEmployeesList.appendChild(listItem);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading STL inactive employees:', error);
+          inactiveLoadingSpinner.style.display = 'none';
+          inactiveEmployeesList.innerHTML = '<div class="list-group-item text-center text-danger">Error loading employees</div>';
+        });
+    }
+
+    // Function to deactivate an STL employee
+    function deactivateSTLEmployee(employeeId, listItem, lastName, firstName) {
+      const formData = new FormData();
+      formData.append('employee_id', employeeId);
+
+      fetch('./includes/deactivate_employee.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Remove the employee from the list with animation
+          listItem.style.transition = 'opacity 0.3s ease-out';
+          listItem.style.opacity = '0';
+          setTimeout(() => {
+            listItem.remove();
+          }, 300);
+          
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.role = 'alert';
+          alertDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>${lastName}, ${firstName}</strong> has been deactivated successfully.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          
+          // Insert alert at the top of management modal body
+          const modalBody = document.querySelector('#activeEmployeesManagementModal .modal-body');
+          const listGroup = document.getElementById('activeEmployeesManagementList');
+          modalBody.insertBefore(alertDiv, listGroup);
+          
+          // Reload inactive employees list
+          loadSTLInactiveEmployees();
+          
+          // Auto-dismiss alert after 3 seconds
+          setTimeout(() => {
+            alertDiv.remove();
+          }, 3000);
+        } else {
+          throw new Error(data.message || 'Failed to deactivate employee');
+        }
+      })
+      .catch(error => {
+        console.error('Error deactivating employee:', error);
+        alert('Error: ' + error.message);
+      });
+    }
+
+    // Function to reactivate an STL employee
+    function reactivateSTLEmployee(employeeId, listItem, lastName, firstName) {
+      const formData = new FormData();
+      formData.append('employee_id', employeeId);
+
+      fetch('./includes/reactivate_employee.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Remove the employee from the list with animation
+          listItem.style.transition = 'opacity 0.3s ease-out';
+          listItem.style.opacity = '0';
+          setTimeout(() => {
+            listItem.remove();
+          }, 300);
+          
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.role = 'alert';
+          alertDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>${lastName}, ${firstName}</strong> has been reactivated successfully.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          
+          // Insert alert at the top of inactive modal body
+          const modalBody = document.querySelector('#inactiveEmployeesModal .modal-body');
+          const listGroup = document.getElementById('inactiveEmployeesList');
+          modalBody.insertBefore(alertDiv, listGroup);
+          
+          // Reload active employees in both selection and management modals
+          loadSTLActiveEmployees();
+          loadSTLActiveEmployeesForManagement();
+          
+          // Auto-dismiss alert after 3 seconds
+          setTimeout(() => {
+            alertDiv.remove();
+          }, 3000);
+        } else {
+          throw new Error(data.message || 'Failed to reactivate employee');
+        }
+      })
+      .catch(error => {
+        console.error('Error reactivating employee:', error);
+        alert('Error: ' + error.message);
+      });
+    }
+
+    // Function to open employee edit modal from active/inactive employees modal
+    function openEmployeeEditModal(employee) {
+      // Close the active/inactive employees modal first
+      const activeModal = bootstrap.Modal.getInstance(document.getElementById('activeEmployeesManagementModal'));
+      if (activeModal) {
+        activeModal.hide();
+      }
+      const inactiveModal = bootstrap.Modal.getInstance(document.getElementById('inactiveEmployeesModal'));
+      if (inactiveModal) {
+        inactiveModal.hide();
+      }
+      
+      // Populate form fields with employee data
+      document.getElementById('edit_pagibig_no').value = employee.pagibig_number || employee.pagibig_no || '';
+      document.getElementById('edit_id_no').value = employee.id_number || employee.id_no || '';
+      document.getElementById('edit_last_name').value = employee.last_name || '';
+      document.getElementById('edit_first_name').value = employee.first_name || '';
+      document.getElementById('edit_middle_name').value = employee.middle_name || '';
+      document.getElementById('edit_tin').value = employee.tin || '';
+      document.getElementById('edit_birthdate').value = employee.birthdate || '';
+      
+      // Show the edit modal
+      const modal = new bootstrap.Modal(document.getElementById('editModal'));
+      modal.show();
+    }
+
+    // Function to open Edit ER Modal
+    function openEditERModal(pagibigNo, erCell) {
+      const currentER = erCell.textContent.trim();
+      document.getElementById('editER_pagibig_no').value = pagibigNo;
+      document.getElementById('editER_value').value = currentER;
+      const modal = new bootstrap.Modal(document.getElementById('editERModal'));
+      modal.show();
+    }
+
+    // Function to save ER value
+    function saveERValue() {
+      const pagibigNo = document.getElementById('editER_pagibig_no').value;
+      const newER = document.getElementById('editER_value').value;
+      
+      // Validate input
+      if (isNaN(newER) || newER === '') {
+        alert('Please enter a valid number');
+        return;
+      }
+      
+      // Update database
+      const formData = new FormData();
+      formData.append('pagibig_no', pagibigNo);
+      formData.append('er', newER);
+      
+      fetch('./includes/update_stl_er.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Find and update the ER cell in the table
+          const table = document.getElementById('selectedEmployeesTable');
+          const tbody = table.querySelector('tbody');
+          const rows = tbody.querySelectorAll('tr');
+          
+          for (let row of rows) {
+            const pagibigCell = row.querySelector('td:first-child');
+            if (pagibigCell) {
+              // Compare only digits to handle formatted vs unformatted numbers
+              const cellDigits = pagibigCell.textContent.replace(/\D/g, '');
+              const paramDigits = pagibigNo.replace(/\D/g, '');
+              
+              if (cellDigits === paramDigits) {
+                const erCell = row.querySelector('td:nth-child(7)');
+                // Format the new ER value to 2 decimal places
+                const formattedER = parseFloat(newER).toFixed(2);
+                erCell.textContent = formattedER;
+                erCell.style.cursor = 'pointer';
+                erCell.style.textAlign = 'right';
+                erCell.style.width = '70px';
+                erCell.onclick = function() { openEditERModal(pagibigNo, this); };
+                break;
+              }
+            }
+          }
+          
+          // Close modal and show success message
+          const modal = bootstrap.Modal.getInstance(document.getElementById('editERModal'));
+          modal.hide();
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'ER value updated successfully!',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        } else {
+          alert('Failed to save: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating ER:', error);
+        alert('Error updating value: ' + error.message);
+      });
+    }
+
+    // Function to delete employee from table and database
+    function deleteSTLEmployeeRow(button, pagibigNo) {
+      const row = button.closest('tr');
+      
+      // Delete from database
+      const formData = new FormData();
+      formData.append('pagibig_no', pagibigNo);
+      
+      fetch('./includes/delete_stl_selected_employee.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          row.remove();
+        } else {
+          console.error('Failed to delete:', data.message);
+          alert('Failed to remove employee: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error deleting employee:', error);
+        // Still remove from UI even if delete fails
+        row.remove();
+      });
+    }
+
+    // Function to add employee to the main table and database
+    function addEmployeeToTable(employee) {
+      const table = document.getElementById('selectedEmployeesTable');
+      const tbody = table.querySelector('tbody');
+      
+      // Remove ALL placeholder/message rows first
+      const allRows = tbody.querySelectorAll('tr');
+      allRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        // If row only has one cell with colspan, it's a message row
+        if (cells.length === 1 && cells[0].getAttribute('colspan')) {
+          row.remove();
+        }
+      });
+      
+      // Check if employee already exists in table
+      const existingRows = tbody.querySelectorAll('tr');
+      for (let row of existingRows) {
+        const pagibigCell = row.querySelector('td:first-child');
+        if (pagibigCell && pagibigCell.textContent.trim() === employee.pagibig_number) {
+          return false;
+        }
+      }
+      
+      // Create new row with ER=200
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td>${formatPagibigNumber(employee.pagibig_number || '')}</td>
+        <td>${employee.id_number || ''}</td>
+        <td>${employee.last_name || ''}</td>
+        <td>${employee.first_name || ''}</td>
+        <td>${employee.middle_name || ''}</td>
+        <td style="text-align: right;">0.00</td>
+        <td style="cursor: pointer;" onclick="openEditERModal('${employee.pagibig_number}', this)">200.00</td>
+        <td>${formatTIN(employee.tin || '')}</td>
+        <td>${employee.birthdate || ''}</td>
+        <td>
+          <button class="btn btn-sm btn-danger" onclick="removeFromSTL('${employee.pagibig_number}', '${employee.last_name}, ${employee.first_name}');">
+            <i class="fas fa-trash"></i> Remove
+          </button>
+        </td>
+      `;
+      
+      tbody.appendChild(newRow);
+      
+      // Clean up any message rows
+      setTimeout(() => {
+        const allRows = tbody.querySelectorAll('tr');
+        allRows.forEach(row => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length === 1 && cells[0].getAttribute('colspan')) {
+            row.remove();
+          }
+        });
+      }, 100);
+      
+      // Save to database (fire and forget - no need to wait for response to update UI)
+      fetch('./includes/save_stl_selected_employee.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          pagibig_number: employee.pagibig_number,
+          id_number: employee.id_number,
+          er: 200
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          console.error('Failed to save employee to database:', data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error saving employee to database:', error);
+      });
+      
+      return true;
+    }
+
+    // Function to load STL active employees for selection
+    function loadSTLActiveEmployees() {
+      const tableBody = document.getElementById('activeEmployeesTableBody');
+      const loadingSpinner = document.getElementById('activeEmployeesLoadingSpinner');
+      
+      if (!tableBody) {
+        console.error('activeEmployeesTableBody element not found');
+        return;
+      }
+      
+      loadingSpinner.style.display = 'block';
+      tableBody.innerHTML = '';
+
+      fetch('./includes/get_stl_active_employees.php')
+        .then(res => res.json())
+        .then(data => {
+          loadingSpinner.style.display = 'none';
+          
+          if (data.status !== 'success' || !data.data || !data.data.employees || data.data.employees.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active STL employees found</td></tr>';
+            return;
+          }
+
+          tableBody.innerHTML = '';
+
+          data.data.employees.forEach((employee, index) => {
+            // Use already_selected flag from database instead of checking HTML DOM
+            const isAlreadyAdded = employee.already_selected === 1 || employee.already_selected === true;
+            const row = document.createElement('tr');
+            const statusBadge = isAlreadyAdded 
+              ? '<span class="badge bg-warning text-dark">ALREADY ADDED</span>'
+              : '<span class="badge bg-success">NOT ADDED</span>';
+            
+            row.innerHTML = `
+              <td>
+                <input type="checkbox" class="form-check-input active-employee-checkbox" 
+                       value="${employee.id}" data-employee='${JSON.stringify(employee)}'
+                       ${isAlreadyAdded ? 'disabled' : ''}>
+              </td>
+              <td><strong>${employee.last_name}, ${employee.first_name}${employee.middle_name ? ' ' + employee.middle_name : ''}</strong></td>
+              <td>${employee.id_number || 'N/A'}</td>
+              <td>${statusBadge}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+
+          // Setup checkbox listeners
+          setupActiveEmployeeCheckboxes();
+        })
+        .catch(error => {
+          console.error('Error loading STL active employees:', error);
+          loadingSpinner.style.display = 'none';
+          tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading employees</td></tr>';
+        });
+    }
+
+    // Function to setup checkbox listeners for active employees
+    function setupActiveEmployeeCheckboxes() {
+      const checkboxes = document.querySelectorAll('.active-employee-checkbox');
+      const selectAllBtn = document.getElementById('selectAllActiveBtn');
+      const addBtn = document.getElementById('activeEmployeesAddBtn');
+      const countSpan = document.getElementById('activeEmployeesCount');
+      const searchInput = document.getElementById('activeEmployeesSearch');
+
+      // Select All functionality
+      if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+          const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+          checkboxes.forEach(cb => {
+            // Only check visible checkboxes
+            if (cb.closest('tr').style.display !== 'none') {
+              cb.checked = !allChecked;
+            }
+          });
+          updateActiveEmployeeCount();
+        });
+      }
+
+      // Individual checkbox change
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateActiveEmployeeCount);
+      });
+
+      // Search functionality
+      if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+          const query = this.value.toLowerCase();
+          const rows = document.querySelectorAll('#activeEmployeesTableBody tr');
+          rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+          });
+        });
+      }
+
+      // Add Selected button
+      if (addBtn) {
+        addBtn.addEventListener('click', function() {
+          const selectedCheckboxes = document.querySelectorAll('.active-employee-checkbox:checked');
+          if (selectedCheckboxes.length === 0) {
+            return;
+          }
+
+          let addedCount = 0;
+          selectedCheckboxes.forEach(cb => {
+            const employee = JSON.parse(cb.dataset.employee);
+            if (addEmployeeToTable(employee)) {
+              addedCount++;
+            }
+          });
+
+          if (addedCount > 0) {
+            // Clear checkboxes and close modal
+            selectedCheckboxes.forEach(cb => cb.checked = false);
+            updateActiveEmployeeCount();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('activeEmployeesModal'));
+            if (modal) modal.hide();
+          }
+        });
+      }
+    }
+
+    function updateActiveEmployeeCount() {
+      const selected = document.querySelectorAll('.active-employee-checkbox:checked').length;
+      const countSpan = document.getElementById('activeEmployeesCount');
+      if (countSpan) {
+        countSpan.textContent = `${selected} employee${selected !== 1 ? 's' : ''} selected`;
+      }
+    }
+
+    // Setup modal event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      const activeEmployeesModal = document.getElementById('activeEmployeesModal');
+      const activeEmployeesManagementModal = document.getElementById('activeEmployeesManagementModal');
+      const inactiveEmployeesModal = document.getElementById('inactiveEmployeesModal');
+      
+      if (activeEmployeesModal) {
+        activeEmployeesModal.addEventListener('show.bs.modal', loadSTLActiveEmployees);
+      }
+      if (activeEmployeesManagementModal) {
+        activeEmployeesManagementModal.addEventListener('show.bs.modal', loadSTLActiveEmployeesForManagement);
+      }
+      if (inactiveEmployeesModal) {
+        inactiveEmployeesModal.addEventListener('show.bs.modal', loadSTLInactiveEmployees);
+      }
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const generateExcelBtn = document.getElementById('btnGenerateExcel');
+        if (generateExcelBtn) {
+            generateExcelBtn.addEventListener('click', function() {
+                const month = document.getElementById('month').value;
+                const year = document.getElementById('yearInput').value;
+
+                if (!month || !year) {
+                    alert('Please select both month and year');
+                    return;
+                }
+
+                // Get table data
+                const table = document.getElementById('selectedEmployeesTable');
+                const rows = table.querySelectorAll('tbody tr');
+
+                if (rows.length === 0) {
+                    alert('No data available in table');
+                    return;
+                }
+
+                // Show loading state
+                generateExcelBtn.disabled = true;
+                generateExcelBtn.textContent = 'Generating...';
+
+                try {
+                    // Prepare data for Excel
+                    const data = [];
+                    
+                    // Add headers
+                    const headers = [
+                        'PAG-IBIG MID NO.',
+                        'EMPLOYEE NUMBER',
+                        'LAST NAME',
+                        'FIRST NAME',
+                        'MIDDLE NAME',
+                        'EE',
+                        'ER',
+                        'TIN',
+                        'BIRTHDATE',                        
+                    ];
+                    data.push(headers);
+
+          // Add data from table
+          rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            
+            // Skip if row doesn't have enough cells (e.g., empty placeholder rows)
+            if (cells.length < 9) {
+              return;
+            }
+            
+            // Parse EE and ER but keep blank when zero or empty
+            const eeText = cells[5].textContent.trim();
+            const erText = cells[6].textContent.trim();
+
+            const eeValue = (eeText !== '' && !isNaN(Number(eeText)) && Number(eeText) !== 0) ? Number(eeText) : '';
+            const erValue = (erText !== '' && !isNaN(Number(erText)) && Number(erText) !== 0) ? Number(erText) : '';
+
+            const rowData = [
+              cells[0].textContent.trim(), // PAG-IBIG
+              cells[1].textContent.trim(), // ID
+              cells[2].textContent.trim(), // Last Name
+              cells[3].textContent.trim(), // First Name
+              cells[4].textContent.trim(), // Middle Name
+              eeValue, // EE Share - blank if zero/empty
+              erValue, // ER Share - blank if zero/empty
+              cells[7].textContent.trim(), // TIN
+              cells[8].textContent.trim(), // Birthdate
+            ];
+            data.push(rowData);
+          });
+
+                    // Create worksheet with default style
+                    const ws = XLSX.utils.aoa_to_sheet(data);
+
+                    // Set column widths
+                    ws['!cols'] = [
+                        {wch: 20}, // PAG-IBIG
+                        {wch: 15}, // Employee Number
+                        {wch: 20}, // Last Name
+                        {wch: 20}, // First Name
+                        {wch: 20}, // Middle Name
+                        {wch: 15}, // EE Share
+                        {wch: 15}, // ER Share
+                        {wch: 15}, // TIN
+                        {wch: 12}, // Birthdate
+                    ];
+
+                    // Define a center-aligned style
+                    const centerStyle = {
+                        alignment: {
+                            horizontal: 'center',
+                            vertical: 'center',
+                            wrapText: true
+                        }
+                    };
+
+                    // Apply center alignment to all cells
+                    const range = XLSX.utils.decode_range(ws['!ref']);
+                    for (let row = range.s.r; row <= range.e.r; row++) {
+                        for (let col = range.s.c; col <= range.e.c; col++) {
+                            const cell_address = XLSX.utils.encode_cell({ r: row, c: col });
+                            if (!ws[cell_address]) {
+                                ws[cell_address] = { v: '', t: 's' };
+                            }
+                            if (!ws[cell_address].s) {
+                                ws[cell_address].s = {};
+                            }
+                            // Apply the center style
+                            ws[cell_address].s = centerStyle;
+                        }
+                    }
+
+          // Ensure numeric columns are properly formatted, but skip empty cells
+          const numericColumns = [5, 6]; // EE and ER columns (0-based index)
+          for (let row = range.s.r + 1; row <= range.e.r; row++) { // Skip header row
+            numericColumns.forEach(col => {
+              const cell_address = XLSX.utils.encode_cell({ r: row, c: col });
+              if (ws[cell_address] && ws[cell_address].v !== '' && !isNaN(Number(ws[cell_address].v))) {
+                ws[cell_address].t = 'n'; // Set type as number
+                // Use integer format if the value is an integer, otherwise keep as general
+                ws[cell_address].z = Number(ws[cell_address].v) % 1 === 0 ? '0' : '0.##';
+              }
+            });
+          }
+
+                    // Create workbook and add worksheet
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'PAG-IBIG Contributions');
+
+                    // Generate and save file
+                    // Clean year (remove any .00 or decimal parts) and add _Stl suffix
+                    const yearClean = String(year).replace(/\.00$|\..*$/, '');
+                    const filename = `${month}_${yearClean}_Stl.xls`;
+                    XLSX.writeFile(wb, filename);
+
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('saveModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    alert('Excel file has been generated successfully!');
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while generating the Excel file');
+                } finally {
+                    // Reset button state
+                    generateExcelBtn.disabled = false;
+                    generateExcelBtn.textContent = 'Generate Excel';
+                }
+            });
+        }
+    });
+    
+
+
+    // Filter table rows by employee name (first, last, middle) and respect rows-per-page
+    const searchInput = document.getElementById('searchInput');
+    const rowsPerPage = document.getElementById('rowsPerPage');
+    const table = document.getElementById('selectedEmployeesTable');
+    
+    // Function to save table state to localStorage
+    function saveTableState() {
+      const state = {
+        searchQuery: searchInput.value,
+        rowsPerPage: rowsPerPage.value,
+      };
+      localStorage.setItem('contributionTableState', JSON.stringify(state));
+    }
+
+    // Function to load table state from localStorage
+    function loadTableState() {
+      const saved = localStorage.getItem('contributionTableState');
+      if (saved) {
+        const state = JSON.parse(saved);
+        searchInput.value = state.searchQuery || '';
+        rowsPerPage.value = state.rowsPerPage || '10';
+      }
+    }
+
+    // Make applyFilter globally accessible
+    window.applyFilter = function() {
+      if (!searchInput || !table || !rowsPerPage) return;
+
+      const tbody = table.querySelector('tbody');
+      
+      // First, remove ALL message rows
+      const messageRows = tbody.querySelectorAll('tr');
+      messageRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 1 && cells[0].getAttribute('colspan')) {
+          row.remove();
+        }
+      });
+
+      const q = searchInput.value.trim().toLowerCase();
+      const limit = parseInt(rowsPerPage.value, 10);
+      const rows = Array.from(tbody.querySelectorAll('tbody tr'));
+      
+      // Save state after filtering
+      saveTableState();
+
+      // Get only data rows (not message rows)
+      const dataRows = rows.filter(row => {
+        const cells = row.querySelectorAll('td');
+        return cells.length > 1 || !cells[0].getAttribute('colspan');
+      });
+
+      // If no data rows, show message
+      if (dataRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted"><em>No STL employees found. Please add active employees using "Register Employee" or the selection modal.</em></td></tr>';
+        return;
+      }
+
+      // First, mark matches
+      const matchedRows = dataRows.filter(row => {
+        const cells = row.querySelectorAll('td');
+        const last = (cells[2] && cells[2].textContent.toLowerCase()) || '';
+        const first = (cells[3] && cells[3].textContent.toLowerCase()) || '';
+        const middle = (cells[4] && cells[4].textContent.toLowerCase()) || '';
+        const combined = `${first} ${middle} ${last}`.trim();
+
+        return q === '' || last.indexOf(q) !== -1 || first.indexOf(q) !== -1 || middle.indexOf(q) !== -1 || combined.indexOf(q) !== -1;
+      });
+
+      // Hide all data rows first
+      dataRows.forEach(r => r.style.display = 'none');
+
+      // Show up to limit (0 means show all)
+      let count = 0;
+      matchedRows.forEach(r => {
+        if (limit === 0 || count < limit) {
+          r.style.display = '';
+          count++;
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    };
+
+    searchInput.addEventListener('input', window.applyFilter);
+    rowsPerPage.addEventListener('change', window.applyFilter);
+
+    // Initial apply
+    window.applyFilter();
+
+    
+    // Function to cleanup duplicate entries in selected_stl table
+    window.cleanupDuplicates = function() {
+        if (!confirm('This will remove duplicate entries from the database. Continue?')) {
+            return;
+        }
+
+        Swal.fire({
+            title: 'Cleaning up duplicates...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('includes/cleanup_duplicates.php', {
+            method: 'POST'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cleanup Complete',
+                    html: `
+                        <div class="text-start">
+                            <p><strong>Duplicates Found:</strong> ${data.results.duplicates_found}</p>
+                            <p><strong>Records Deleted:</strong> ${data.results.records_deleted}</p>
+                            <p><strong>Violations Remaining:</strong> ${data.results.violations_remaining}</p>
+                        </div>
+                    `,
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Reload the table after cleanup
+                    window.loadEmployees();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Cleanup Failed',
+                    text: data.message || 'An error occurred during cleanup'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to cleanup duplicates: ' + error.message
+            });
+        });
+    };
+
+    // Fetch data and handle page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait for all scripts to be fully parsed and executed
+        setTimeout(function() {
+            console.log('=== Page Initialization Starting ===');
+            
+            // Verify functions are available
+            if (typeof loadTableState !== 'function') {
+                console.error('loadTableState not available');
+            } else {
+                loadTableState();
+                console.log('✓ loadTableState executed');
+            }
+            
+            // Add loading indicator
+            const tbody = document.querySelector('#selectedEmployeesTable tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Loading...</td></tr>';
+            }
+
+            // Initial fetch of data with error handling
+            if (typeof loadEmployees === 'function') {
+                console.log('✓ loadEmployees available - calling now');
+                loadEmployees();
+            } else {
+                console.error('✗ loadEmployees function not available');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error: Failed to load employees function</td></tr>';
+                }
+            }
+
+            // Setup search input event listener
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('change', function() {
+                    if (typeof saveTableState === 'function') {
+                        saveTableState();
+                    }
+                });
+                searchInput.addEventListener('keyup', function() {
+                    if (typeof applyFilter === 'function') {
+                        applyFilter();
+                    }
+                });
+            }
+            
+            // Setup rows per page event listener
+            const rowsPerPage = document.getElementById('rowsPerPage');
+            if (rowsPerPage) {
+                rowsPerPage.addEventListener('change', function() {
+                    if (typeof saveTableState === 'function') {
+                        saveTableState();
+                    }
+                });
+            }
+
+            // Save state before page unload
+            window.addEventListener('beforeunload', function() {
+                if (typeof saveTableState === 'function') {
+                    saveTableState();
+                }
+            });
+
+            console.log('=== Page Initialization Complete ===');
+        }, 1000);
+    });
+
+  </script>
+</body>
+</html>
