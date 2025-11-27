@@ -53,22 +53,6 @@ if (!isset($data['last_name']) || !isset($data['first_name'])) {
 $conn = getConnection();
 
 try {
-    $sql = "UPDATE employees SET 
-            last_name = ?,
-            first_name = ?,
-            middle_name = ?,
-            ee = ?,
-            er = ?,
-            tin = ?,
-            birthdate = ?
-            WHERE id = ? AND pagibig_number = ?";
-            
-    $stmt = $conn->prepare($sql);
-    
-    if (!$stmt) {
-        throw new Exception('Prepare statement failed: ' . $conn->error);
-    }
-    
     // Get the values
     $last_name = isset($data['last_name']) ? strtoupper($data['last_name']) : '';
     $first_name = isset($data['first_name']) ? strtoupper($data['first_name']) : '';
@@ -88,24 +72,58 @@ try {
         }
     }
     
-    $ee = isset($data['ee']) ? floatval($data['ee']) : 0.00;
-    $er = isset($data['er']) ? floatval($data['er']) : 0.00;
     $birthdate = isset($data['birthdate']) ? $data['birthdate'] : null;
     $id = intval($data['id']);
     $pagibig_number = $data['pagibig_number'];
     
-    // Bind parameters
-    $stmt->bind_param('sssddssis', 
+    // Build dynamic SQL - only update EE and ER if explicitly provided
+    $updateFields = [
+        'last_name = ?',
+        'first_name = ?',
+        'middle_name = ?',
+        'tin = ?',
+        'birthdate = ?'
+    ];
+    
+    $params = [
         $last_name,
         $first_name,
         $middle_name,
-        $ee,
-        $er,
         $tin,
-        $birthdate,
-        $id,
-        $pagibig_number
-    );
+        $birthdate
+    ];
+    
+    $types = 'sssss';
+    
+    // Only add EE and ER if they are explicitly provided in the request
+    if (isset($data['ee']) && $data['ee'] !== '') {
+        $updateFields[] = 'ee = ?';
+        $params[] = floatval($data['ee']);
+        $types .= 'd';
+    }
+    
+    if (isset($data['er']) && $data['er'] !== '') {
+        $updateFields[] = 'er = ?';
+        $params[] = floatval($data['er']);
+        $types .= 'd';
+    }
+    
+    // Add WHERE clause parameters
+    $params[] = $id;
+    $params[] = $pagibig_number;
+    $types .= 'is';
+    
+    // Build the final SQL
+    $sql = "UPDATE employees SET " . implode(', ', $updateFields) . " WHERE id = ? AND pagibig_number = ?";
+    
+    $stmt = $conn->prepare($sql);
+    
+    if (!$stmt) {
+        throw new Exception('Prepare statement failed: ' . $conn->error);
+    }
+    
+    // Bind parameters dynamically
+    $stmt->bind_param($types, ...$params);
 
     // Execute the statement
     if ($stmt->execute()) {

@@ -64,16 +64,18 @@ if (!isset($_SESSION['user_id'])) {
   }
   
   .content {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     visibility: visible !important;
     opacity: 1 !important;
     flex: 1;
     margin-left: 0 !important;
     padding: 20px;
     width: auto !important;
-    min-height: 100vh;
+    height: 100vh;
     background-color: #f8f9fa;
-    overflow-y: auto;
+    overflow: hidden;
+    gap: 0;
   }
   
   /* Make the table container scrollable */
@@ -107,13 +109,13 @@ if (!isset($_SESSION['user_id'])) {
   <!-- Include Sidebar OUTSIDE content area -->
   <?php include 'sidebar.php'; ?>
 
-  <div class="content" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
+  <div class="content" style="display: flex !important; flex-direction: column; visibility: visible !important; opacity: 1 !important;">
     <!-- STL specific modals -->
     <?php include 'modals/register-employee-modal.php'; ?>
     <?php include 'modals/employee_edit_modal.php'; ?>
 
-    <h3>Short Term Loan (STL)</h3>
-    <div class="d-flex justify-content-end align-items-center mt-4">
+    <h3 style="margin: 0 0 15px 0; flex-shrink: 0;">Short Term Loan (STL)</h3>
+    <div class="d-flex justify-content-end align-items-center" style="margin-bottom: 15px; flex-shrink: 0;">
       <!-- Right side controls -->
       <div class="d-flex align-items-center">
         <label for="rowsPerPage" class="me-3 mb-0 small">Show</label>
@@ -125,16 +127,16 @@ if (!isset($_SESSION['user_id'])) {
           <option value="0">All</option>
         </select>
         <!-- Small search box aligned to the right upper side -->
-        <div style="max-width: 240px; width:100%; margin-bottom: 1rem;">
+        <div style="max-width: 240px; width:100%;">
           <input type="search" id="searchInput" class="form-control form-control-sm" placeholder="Search employee name">
         </div>
       </div>
     </div>
 
     <!-- Scrollable Table Container -->
-    <div class="table-responsive" style="max-height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #dee2e6; border-radius: 0.25rem;">
+    <div class="table-responsive" style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; border: 1px solid #dee2e6; border-radius: 0.25rem;">
       <table class="table table-bordered mb-0" id="selectedEmployeesTable">
-        <thead style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa;">
+        <thead style="position: sticky; top: 0; z-index: 10; background-color: white; border-bottom: 2px solid #dee2e6;">
           <tr>
             <th>Pag-IBIG #</th>
             <th>ID #</th>

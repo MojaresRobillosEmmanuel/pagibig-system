@@ -108,16 +108,18 @@ $selectedContributions = getSelectedContributions($conn, $_SESSION['user_id']);
   }
   
   .content {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     visibility: visible !important;
     opacity: 1 !important;
     flex: 1;
     margin-left: 0 !important;
     padding: 20px;
     width: auto !important;
-    min-height: 100vh;
+    height: 100vh;
     background-color: #f8f9fa;
-    overflow-y: auto;
+    overflow: hidden;
+    gap: 0;
   }
 </style>
 </head>
@@ -126,9 +128,9 @@ $selectedContributions = getSelectedContributions($conn, $_SESSION['user_id']);
   <!-- Include Sidebar OUTSIDE content area -->
   <?php include 'asset/sidebar/sidebar.php'; ?>
 
-  <div class="content" style="display: block !important; visibility: visible !important; opacity: 1 !important;">
-    <h3>Contribution</h3>
-    <div class="d-flex justify-content-between align-items-center mt-4">
+  <div class="content" style="display: flex !important; flex-direction: column; visibility: visible !important; opacity: 1 !important;">
+    <h3 style="margin: 0 0 15px 0; flex-shrink: 0;">Contribution</h3>
+    <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 15px; flex-shrink: 0;">
       <h5 class="mb-0">Selected Contributions</h5>
       <div class="d-flex align-items-center">
         <label for="rowsPerPage" class="me-3 mb-0 small">Show</label>
@@ -141,37 +143,39 @@ $selectedContributions = getSelectedContributions($conn, $_SESSION['user_id']);
         </select>
 
         <!-- Small search box aligned to the right upper side -->
-        <div style="max-width: 240px; width:100%; margin-bottom: 1rem; margin-bottom:1rem;">
+        <div style="max-width: 240px; width:100%;">
           <input type="search" id="searchInput" class="form-control form-control-sm" placeholder="Search employee name">
         </div>
       </div>
     </div>
 
-    <table class="table table-bordered" id="selectedEmployeesTable">
-      <thead>
-        <tr>
-          <th>Pag-IBIG #</th>
-          <th>ID #</th>
-          <th>Last Name</th>
-          <th>First Name</th>
-          <th>Middle Name</th>
-          <th>EE</th>
-          <th>ER</th>
-          <th>TIN</th>
-          <th>Birthdate</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="10" class="text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; border: 1px solid #dee2e6; border-radius: 0.25rem;">
+      <table class="table table-bordered mb-0" id="selectedEmployeesTable">
+        <thead style="position: sticky; top: 0; background-color: white; z-index: 10; border-bottom: 2px solid #dee2e6;">
+          <tr>
+            <th>Pag-IBIG #</th>
+            <th>ID #</th>
+            <th>Last Name</th>
+            <th>First Name</th>
+            <th>Middle Name</th>
+            <th>EE</th>
+            <th>ER</th>
+            <th>TIN</th>
+            <th>Birthdate</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="10" class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Edit Modal -->
