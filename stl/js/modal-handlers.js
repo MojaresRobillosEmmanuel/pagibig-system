@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const editModal = document.getElementById('editModal');
+    // STL modals use different IDs
+    const editModal = document.getElementById('editSTLModal');
     const registerModal = document.getElementById('registerEmployeeModal');
     
     function setupEditEmployeeForm() {
         if (!editModal) {
-            console.error('Edit modal element not found');
+            console.warn('Edit modal element not found - STL edit form may not be initialized via modal-handlers');
             return;
         }
         

@@ -11,29 +11,32 @@ function formatPagibigNumber(pagibig) {
     return cleaned.substring(0, 4) + '-' + cleaned.substring(4, 8) + '-' + cleaned.substring(8, 12);
 }
 
-// Function to format TIN number with dashes (preserve existing dashes)
+// Function to format TIN number with dashes (XXX-XXX-XXX-0000) - Last 4 digits always 0000
 function formatTIN(tin) {
     if (!tin) return '';
+    
     const tinStr = tin.toString().trim();
     
-    // If already formatted with dashes, return as is
-    if (tinStr.includes('-')) {
-        return tinStr;
-    }
+    // If it's empty after trimming, return empty
+    if (tinStr === '') return '';
     
-    // Otherwise, clean and format
-    const cleaned = tinStr.replace(/\D/g, '');
+    // Remove all dashes and non-numeric characters to get clean digits
+    const cleaned = tinStr.replace(/[^\d]/g, '');
     
-    if (cleaned.length === 12) {
-        return cleaned.substring(0, 3) + '-' + cleaned.substring(3, 6) + '-' + cleaned.substring(6, 9) + '-' + cleaned.substring(9, 12);
-    }
+    // If no digits, return original
+    if (cleaned.length === 0) return '';
     
-    if (cleaned.length === 13) {
-        const truncated = cleaned.substring(1);
-        return truncated.substring(0, 3) + '-' + truncated.substring(3, 6) + '-' + truncated.substring(6, 9) + '-' + truncated.substring(9, 12);
-    }
+    // Always take the first 9 digits (ignore anything beyond)
+    // This handles both old 12-digit format and new 9-digit format
+    const first9Digits = cleaned.substring(0, 9);
     
-    return tin;
+    // Pad with leading zeros if less than 9 digits
+    const paddedDigits = first9Digits.padStart(9, '0');
+    
+    // Format as XXX-XXX-XXX-0000
+    return paddedDigits.substring(0, 3) + '-' + 
+           paddedDigits.substring(3, 6) + '-' + 
+           paddedDigits.substring(6, 9) + '-0000';
 }
 
 // Function to format date for display - MM/DD/YYYY
@@ -127,11 +130,11 @@ window.loadEmployees = function() {
                     <td style="width: 120px; text-transform: uppercase;">${emp.middle_name || ''}</td>
                     <td style="width: 70px; text-align: right;">${eeValue}</td>
                     <td style="width: 70px; text-align: right; cursor: pointer;" onclick="openEditERModal('${emp.pagibig_no || emp.pagibig_number}', this)">${erValue}</td>
-                    <td style="width: 150px;">${formatTIN(emp.tin || '')}</td>
+                    <td style="width: 150px;" class="tin-cell">${formatTIN(emp.tin || '')}</td>
                     <td style="width: 100px;">${formatDateForDisplay(emp.birthdate || '')}</td>
-                    <td style="width: 100px; text-align: center;">
-                        <button class="btn btn-sm btn-danger" onclick="removeFromSTL('${emp.pagibig_no || emp.pagibig_number}', '${emp.last_name}, ${emp.first_name}')" title="Remove">
-                            <i class="fas fa-trash me-1"></i>Remove
+                    <td style="width: auto; text-align: center;">
+                        <button class="btn btn-sm btn-danger" onclick="removeFromSTL('${emp.pagibig_no || emp.pagibig_number}', '${emp.last_name}, ${emp.first_name}')" title="Remove from STL">
+                            <i class="fas fa-trash"></i> Remove
                         </button>
                     </td>
                 `;
@@ -161,44 +164,42 @@ window.removeFromSTL = function(pagibigNo, employeeName) {
         return;
     }
     
-    // Find and remove the row from the table immediately
-    const table = document.getElementById('selectedEmployeesTable');
-    if (table) {
-        const tbody = table.querySelector('tbody');
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach(row => {
-            const pagibigCell = row.querySelector('td:first-child');
-            if (pagibigCell) {
-                // Extract just the digits from the Pag-IBIG number for comparison
-                const cellValue = pagibigCell.textContent.replace(/\D/g, '');
-                const paramValue = pagibigNo.replace(/\D/g, '');
-                if (cellValue === paramValue) {
-                    // Remove the row with animation
-                    row.style.transition = 'opacity 0.3s ease-out';
-                    row.style.opacity = '0';
-                    setTimeout(() => {
-                        row.remove();
-                        
-                        // Check if table is now empty
-                        const remainingRows = tbody.querySelectorAll('tr');
-                        if (remainingRows.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted"><em>No STL employees found. Please add active employees using "Register Employee" or the selection modal.</em></td></tr>';
-                        }
-                    }, 300);
-                }
-            }
-        });
-    }
-    
     const formData = new FormData();
     formData.append('pagibig_no', pagibigNo);
+    
+    // Show loading state
+    Swal.fire({
+        title: 'Removing...',
+        text: 'Please wait while the employee is being removed.',
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    });
     
     fetch('includes/remove_from_stl.php', {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        // Check if response is JSON
+        if (!res.ok && res.status !== 404) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        // Check content type
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('Response Content-Type:', contentType);
+            throw new Error('Server returned non-JSON response. Please check the server logs.');
+        }
+        
+        return res.json();
+    })
     .then(data => {
+        console.log('Remove response:', data);
+        
         if (data.success) {
             // Show success message
             Swal.fire({
@@ -209,18 +210,22 @@ window.removeFromSTL = function(pagibigNo, employeeName) {
                 showConfirmButton: false
             });
             
-            // Reload the table to sync with database
+            // Reload the table after a brief delay
             setTimeout(() => {
                 window.loadEmployees();
             }, 1000);
         } else {
-            // If removal failed, reload to restore the row
+            // Show error message
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: data.message || 'Failed to remove employee'
+                text: data.message || 'Failed to remove employee from database'
             });
-            window.loadEmployees();
+            
+            // Reload to restore the row
+            setTimeout(() => {
+                window.loadEmployees();
+            }, 500);
         }
     })
     .catch(error => {
@@ -228,8 +233,13 @@ window.removeFromSTL = function(pagibigNo, employeeName) {
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'An error occurred while removing the employee'
+            text: error.message || 'An error occurred while removing the employee. Check console for details.'
         });
+        
+        // Reload to restore the row
+        setTimeout(() => {
+            window.loadEmployees();
+        }, 500);
     });
 };
 

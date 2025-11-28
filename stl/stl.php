@@ -112,7 +112,6 @@ if (!isset($_SESSION['user_id'])) {
   <div class="content" style="display: flex !important; flex-direction: column; visibility: visible !important; opacity: 1 !important;">
     <!-- STL specific modals -->
     <?php include 'modals/register-employee-modal.php'; ?>
-    <?php include 'modals/employee_edit_modal.php'; ?>
 
     <h3 style="margin: 0 0 15px 0; flex-shrink: 0;">Short Term Loan (STL)</h3>
     <div class="d-flex justify-content-end align-items-center" style="margin-bottom: 15px; flex-shrink: 0;">
@@ -156,69 +155,83 @@ if (!isset($_SESSION['user_id'])) {
     </div>
   </div>
 
-  <!-- Edit Modal -->
-  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+
+  <!-- Edit Employee Modal for STL -->
+  <div class="modal fade" id="editSTLModal" tabindex="-1" aria-labelledby="editSTLModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header" style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); border: none;">
-          <h5 class="modal-title text-white" id="editModalLabel">
-            <i class="fas fa-user-edit me-2"></i>Employee Details
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="editSTLModalLabel">
+            <i class="fas fa-user-edit me-2"></i>Edit Employee Details
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body" style="background-color: #f8f9fa; padding: 30px;">
-          <form id="editForm">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="edit_id_no" class="form-label fw-bold">ID Number:</label>
-                <input type="text" class="form-control" id="edit_id_no" name="id_no" style="background-color: #e9ecef;" readonly>
+        <div class="modal-body">
+          <form id="editSTLForm">
+            <input type="hidden" id="editSTL_employee_id" name="id">
+            <input type="hidden" id="editSTL_pagibig_no" name="pagibig_no">
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_id_no" class="form-label">ID Number:</label>
+                <input type="text" class="form-control" id="editSTL_id_no" name="id_no" readonly style="background-color: #e9ecef;">
               </div>
-              <div class="col-md-6">
-                <label for="edit_pagibig_no" class="form-label fw-bold">Pag-IBIG Number:</label>
-                <input type="text" class="form-control" id="edit_pagibig_no" name="pagibig_no" style="background-color: #e9ecef;" readonly>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="edit_last_name" class="form-label fw-bold">Last Name:</label>
-                <input type="text" class="form-control" id="edit_last_name" name="last_name">
-              </div>
-              <div class="col-md-6">
-                <label for="edit_first_name" class="form-label fw-bold">First Name:</label>
-                <input type="text" class="form-control" id="edit_first_name" name="first_name">
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_pagibigNo" class="form-label">Pag-IBIG Number:</label>
+                <input type="text" class="form-control" id="editSTL_pagibigNo" readonly style="background-color: #e9ecef;">
               </div>
             </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="edit_middle_name" class="form-label fw-bold">Middle Name:</label>
-                <input type="text" class="form-control" id="edit_middle_name" name="middle_name">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_last_name" class="form-label">Last Name: <small class="text-muted">(Letters only - Auto-uppercase)</small></label>
+                <input type="text" class="form-control" id="editSTL_last_name" name="last_name" placeholder="Letters only">
               </div>
-              <div class="col-md-6">
-                <label for="edit_tin" class="form-label fw-bold">TIN:</label>
-                <input type="text" class="form-control" id="edit_tin" name="tin">
-              </div>
-            </div>
-
-            <div class="row mb-4">
-              <div class="col-md-6">
-                <label for="edit_birthdate" class="form-label fw-bold">Birthdate:</label>
-                <input type="date" class="form-control" id="edit_birthdate" name="birthdate">
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_first_name" class="form-label">First Name: <small class="text-muted">(Letters only - Auto-uppercase)</small></label>
+                <input type="text" class="form-control" id="editSTL_first_name" name="first_name" placeholder="Letters only">
               </div>
             </div>
 
-            <div class="alert alert-info" style="border-left: 4px solid #0066cc; border-radius: 4px;">
-              <i class="fas fa-info-circle me-2" style="color: #0066cc;"></i>
-              <strong>Note:</strong> ID Number and Pag-IBIG Number are read-only fields. You can edit other employee information.
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_middle_name" class="form-label">Middle Name: <small class="text-muted">(Letters only - Auto-uppercase)</small></label>
+                <input type="text" class="form-control" id="editSTL_middle_name" name="middle_name" placeholder="Letters only">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_tin" class="form-label">TIN: <small class="text-muted">(Format: XXX-XXX-XXX-0000)</small></label>
+                <input type="text" class="form-control" id="editSTL_tin" name="tin" placeholder="Format: XXX-XXX-XXX-0000" maxlength="15">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="editSTL_birthdate" class="form-label">Birthdate: <small class="text-muted">(Format: MM/DD/YYYY)</small></label>
+                <input type="text" class="form-control" id="editSTL_birthdate" name="birthdate" placeholder="MM/DD/YYYY" maxlength="10">
+              </div>
+            </div>
+
+            <div id="editSTLError" style="display: none;" class="alert alert-danger mt-3"></div>
+
+            <div class="alert alert-info mt-3">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Note:</strong> 
+              <ul class="mb-0 mt-2">
+                <li>ID Number and Pag-IBIG Number are read-only fields.</li>
+                <li>Names automatically convert to uppercase - letters only.</li>
+                <li>TIN will be formatted as XXX-XXX-XXX-0000 (requires 9 digits, last 4 are always 0000).</li>
+                <li>Birthdate must be in MM/DD/YYYY format.</li>
+                <li>All changes are automatically formatted when saved.</li>
+              </ul>
             </div>
           </form>
         </div>
-        <div class="modal-footer" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6; padding: 20px;">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="padding: 8px 20px;">
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="fas fa-times me-2"></i>Cancel
           </button>
-          <button type="button" class="btn btn-primary" onclick="saveEmployeeChanges()" style="padding: 8px 20px; background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); border: none;">
+          <button type="button" class="btn btn-primary" onclick="saveSTLEmployeeChangesEnhanced()">
             <i class="fas fa-save me-2"></i>Save Changes
           </button>
         </div>
@@ -418,10 +431,12 @@ if (!isset($_SESSION['user_id'])) {
 
   <!-- Your custom scripts -->
   <script src="../assets/js/script.js?v=20251111"></script>
-  <script src="./js/utilities.js?v=20251111"></script> <!-- STL utilities -->
-  <script src="./js/employee-management.js?v=20251112-remove-button"></script> <!-- STL-specific logic -->
-  <script src="./js/register-validation.js?v=20251112-fix-auto-add"></script> <!-- STL registration validation -->
+  <script src="./js/utilities.js?v=20251127-tin-no-global"></script> <!-- STL utilities -->
+  <script src="./js/employee-management.js?v=20251128c"></script> <!-- STL-specific logic -->
+  <script src="./js/stl-employee-status.js?v=20251127-remove-fix-v2"></script> <!-- STL employee status management -->
+  <script src="./js/register-validation.js?v=20251127-tin-format"></script> <!-- STL registration validation -->
   <script src="./js/modal-handlers.js?v=20251111"></script> <!-- STL modal handlers -->
+  <script src="./js/edit-employee-modal.js?v=20251127"></script> <!-- Enhanced edit modal with formatting -->
   
   <!-- Verify scripts loaded successfully -->
   <script>
@@ -562,10 +577,46 @@ if (!isset($_SESSION['user_id'])) {
             nameLink.style.color = 'black';
             nameLink.style.textDecoration = 'none';
             nameLink.style.cursor = 'pointer';
-            nameLink.onclick = (e) => {
+            nameLink.style.fontWeight = 'bold';
+            nameLink.title = 'Click to edit employee details';
+            
+            // Click handler to open edit modal
+            nameLink.addEventListener('click', (e) => {
               e.preventDefault();
-              openEmployeeEditModal(employee);
-            };
+              e.stopPropagation();
+              console.log('✓ Employee name clicked in Active Employees modal');
+              
+              // Close active employees modal
+              const activeModal = document.getElementById('activeEmployeesManagementModal');
+              if (activeModal) {
+                try {
+                  const instance = bootstrap.Modal.getInstance(activeModal);
+                  if (instance) {
+                    instance.hide();
+                    console.log('✓ Closed active employees management modal');
+                  }
+                } catch (e) {
+                  console.warn('Could not close active modal:', e.message);
+                }
+              }
+              
+              // Populate and show edit modal
+              setTimeout(() => {
+                openSTLEmployeeEditModal(
+                  employee.id,
+                  employee.last_name,
+                  employee.first_name,
+                  employee.middle_name || '',
+                  employee.id_number,
+                  employee.pagibig_number,
+                  employee.tin || '',
+                  employee.birthdate || '',
+                  employee.ee || '0.00',
+                  employee.er || '0.00'
+                );
+              }, 500);
+            });
+            
             nameSpan.appendChild(nameLink);
             
             const detailsSpan = document.createElement('small');
@@ -651,10 +702,6 @@ if (!isset($_SESSION['user_id'])) {
             nameLink.style.color = 'black';
             nameLink.style.textDecoration = 'none';
             nameLink.style.cursor = 'pointer';
-            nameLink.onclick = (e) => {
-              e.preventDefault();
-              openEmployeeEditModal(employee);
-            };
             nameSpan.appendChild(nameLink);
             
             const detailsSpan = document.createElement('small');
@@ -796,32 +843,6 @@ if (!isset($_SESSION['user_id'])) {
       });
     }
 
-    // Function to open employee edit modal from active/inactive employees modal
-    function openEmployeeEditModal(employee) {
-      // Close the active/inactive employees modal first
-      const activeModal = bootstrap.Modal.getInstance(document.getElementById('activeEmployeesManagementModal'));
-      if (activeModal) {
-        activeModal.hide();
-      }
-      const inactiveModal = bootstrap.Modal.getInstance(document.getElementById('inactiveEmployeesModal'));
-      if (inactiveModal) {
-        inactiveModal.hide();
-      }
-      
-      // Populate form fields with employee data
-      document.getElementById('edit_pagibig_no').value = employee.pagibig_number || employee.pagibig_no || '';
-      document.getElementById('edit_id_no').value = employee.id_number || employee.id_no || '';
-      document.getElementById('edit_last_name').value = employee.last_name || '';
-      document.getElementById('edit_first_name').value = employee.first_name || '';
-      document.getElementById('edit_middle_name').value = employee.middle_name || '';
-      document.getElementById('edit_tin').value = employee.tin || '';
-      document.getElementById('edit_birthdate').value = employee.birthdate || '';
-      
-      // Show the edit modal
-      const modal = new bootstrap.Modal(document.getElementById('editModal'));
-      modal.show();
-    }
-
     // Function to open Edit ER Modal
     function openEditERModal(pagibigNo, erCell) {
       const currentER = erCell.textContent.trim();
@@ -899,6 +920,138 @@ if (!isset($_SESSION['user_id'])) {
         console.error('Error updating ER:', error);
         alert('Error updating value: ' + error.message);
       });
+    }
+
+    // Function to open STL employee edit modal and populate with employee data
+    function openSTLEmployeeEditModal(id, lastName, firstName, middleName, idNumber, pagibigNo, tin, birthdate, ee, er) {
+        console.log('openSTLEmployeeEditModal called with:', { id, lastName, firstName, middleName, idNumber, pagibigNo, tin, birthdate, ee, er });
+        
+        // Ensure modal exists first
+        const editSTLModal = document.getElementById('editSTLModal');
+        if (!editSTLModal) {
+            console.error('editSTLModal element not found in DOM');
+            alert('Error: Edit modal not found. Please refresh the page.');
+            return;
+        }
+        console.log('✓ Edit modal element found');
+        
+        // Populate employee details in the edit modal
+        const employeeIdField = document.getElementById('editSTL_employee_id');
+        if (employeeIdField) {
+            employeeIdField.value = id || '';
+            console.log('✓ Set employee ID:', id);
+        }
+        
+        const idNoField = document.getElementById('editSTL_id_no');
+        if (idNoField) {
+            idNoField.value = idNumber || '';
+            console.log('✓ Set ID number:', idNumber);
+        }
+        
+        const pagibigNoHiddenField = document.getElementById('editSTL_pagibig_no');
+        if (pagibigNoHiddenField) {
+            pagibigNoHiddenField.value = pagibigNo || '';
+        }
+        
+        const pagibigNoDisplayField = document.getElementById('editSTL_pagibigNo');
+        if (pagibigNoDisplayField) {
+            const formatted = formatPagibigNumber(pagibigNo || '');
+            pagibigNoDisplayField.value = formatted || '';
+            console.log('✓ Set Pag-IBIG number (formatted):', formatted);
+        }
+        
+        const lastNameField = document.getElementById('editSTL_last_name');
+        if (lastNameField) {
+            lastNameField.value = (lastName || '').toUpperCase();
+            console.log('✓ Set last name:', lastName);
+        }
+        
+        const firstNameField = document.getElementById('editSTL_first_name');
+        if (firstNameField) {
+            firstNameField.value = (firstName || '').toUpperCase();
+            console.log('✓ Set first name:', firstName);
+        }
+        
+        const middleNameField = document.getElementById('editSTL_middle_name');
+        if (middleNameField) {
+            middleNameField.value = (middleName || '').toUpperCase();
+            console.log('✓ Set middle name:', middleName);
+        }
+        
+        const tinField = document.getElementById('editSTL_tin');
+        if (tinField) {
+            const formattedTin = formatTIN(tin || '');
+            tinField.value = formattedTin || '';
+            console.log('✓ Set TIN (formatted):', formattedTin);
+        }
+        
+        const birthdateField = document.getElementById('editSTL_birthdate');
+        if (birthdateField) {
+            birthdateField.value = birthdate || '';
+            console.log('✓ Set birthdate:', birthdate);
+        }
+        
+        console.log('✓ All modal fields populated');
+        
+        // Clear any previous errors
+        const errorDiv = document.getElementById('editSTLError');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+        }
+        
+        // Show the edit employee modal
+        try {
+            // Remove any existing modal instance
+            let editModalInstance = bootstrap.Modal.getInstance(editSTLModal);
+            if (editModalInstance) {
+                editModalInstance.dispose();
+                console.log('Disposed previous modal instance');
+            }
+            
+            // Create new modal instance with proper options
+            const editModal = new bootstrap.Modal(editSTLModal, {
+                backdrop: 'static',
+                keyboard: false,
+                focus: true
+            });
+            
+            // Show the modal
+            editModal.show();
+            console.log('✓ Edit modal shown successfully');
+            
+            // Setup formatting for all input fields
+            setTimeout(function() {
+                if (typeof setupEditModalFormatting === 'function') {
+                    setupEditModalFormatting();
+                    console.log('✓ Edit modal formatting setup complete');
+                }
+                
+                // Force focus on first input
+                const firstInput = editSTLModal.querySelector('input:not([type="hidden"]):not([readonly])');
+                if (firstInput && firstInput.id !== 'editSTL_id_no') {
+                    firstInput.focus();
+                    console.log('✓ Focused on first editable input field');
+                }
+            }, 100);
+            
+        } catch (error) {
+            console.error('✗ Error showing edit modal:', error);
+            console.error('Error stack:', error.stack);
+            alert('Error opening edit form: ' + error.message);
+        }
+    }
+
+    // Function to save STL employee changes
+    // This function is maintained for backward compatibility
+    // It now calls the enhanced version with better validation and formatting
+    function saveSTLEmployeeChanges() {
+        if (typeof saveSTLEmployeeChangesEnhanced === 'function') {
+            saveSTLEmployeeChangesEnhanced();
+        } else {
+            console.error('Enhanced save function not available');
+            alert('Error: Save function not loaded properly. Please refresh the page.');
+        }
     }
 
     // Function to delete employee from table and database
@@ -1010,6 +1163,8 @@ if (!isset($_SESSION['user_id'])) {
       return true;
     }
 
+
+
     // Function to load STL active employees for selection
     function loadSTLActiveEmployees() {
       const tableBody = document.getElementById('activeEmployeesTableBody');
@@ -1039,23 +1194,51 @@ if (!isset($_SESSION['user_id'])) {
             // Use already_selected flag from database instead of checking HTML DOM
             const isAlreadyAdded = employee.already_selected === 1 || employee.already_selected === true;
             const row = document.createElement('tr');
-            const statusBadge = isAlreadyAdded 
-              ? '<span class="badge bg-warning text-dark">ALREADY ADDED</span>'
-              : '<span class="badge bg-success">NOT ADDED</span>';
             
-            row.innerHTML = `
-              <td>
-                <input type="checkbox" class="form-check-input active-employee-checkbox" 
-                       value="${employee.id}" data-employee='${JSON.stringify(employee)}'
-                       ${isAlreadyAdded ? 'disabled' : ''}>
-              </td>
-              <td><strong>${employee.last_name}, ${employee.first_name}${employee.middle_name ? ' ' + employee.middle_name : ''}</strong></td>
-              <td>${employee.id_number || 'N/A'}</td>
-              <td>${statusBadge}</td>
-            `;
+            // Create checkbox cell
+            const checkboxCell = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'form-check-input active-employee-checkbox';
+            checkbox.value = employee.id;
+            checkbox.dataset.employee = JSON.stringify(employee);
+            if (isAlreadyAdded) {
+              checkbox.disabled = true;
+            }
+            checkboxCell.appendChild(checkbox);
+            
+            // Create name cell with clickable link
+            const nameCell = document.createElement('td');
+            const nameLink = document.createElement('a');
+            nameLink.href = '#';
+            nameLink.style.color = 'black';
+            nameLink.style.textDecoration = 'none';
+            nameLink.style.fontWeight = 'bold';
+            nameLink.textContent = `${employee.last_name}, ${employee.first_name}${employee.middle_name ? ' ' + employee.middle_name : ''}`;
+            nameLink.addEventListener('click', (e) => e.preventDefault());
+            nameCell.appendChild(nameLink);
+            
+            // Create ID cell
+            const idCell = document.createElement('td');
+            idCell.textContent = employee.id_number || 'N/A';
+            
+            // Create status cell
+            const statusCell = document.createElement('td');
+            const statusBadge = document.createElement('span');
+            statusBadge.className = isAlreadyAdded ? 'badge bg-warning text-dark' : 'badge bg-success';
+            statusBadge.textContent = isAlreadyAdded ? 'ALREADY ADDED' : 'NOT ADDED';
+            statusCell.appendChild(statusBadge);
+            
+            // Add all cells to row
+            row.appendChild(checkboxCell);
+            row.appendChild(nameCell);
+            row.appendChild(idCell);
+            row.appendChild(statusCell);
+            
+            // Append row to table
             tableBody.appendChild(row);
           });
-
+          
           // Setup checkbox listeners
           setupActiveEmployeeCheckboxes();
         })
@@ -1527,6 +1710,23 @@ if (!isset($_SESSION['user_id'])) {
             console.log('=== Page Initialization Complete ===');
         }, 1000);
     });
+
+    // Make functions globally accessible for use in onclick handlers and other contexts
+    window.openSTLEmployeeEditModal = openSTLEmployeeEditModal;
+    window.saveSTLEmployeeChanges = saveSTLEmployeeChanges;
+    window.loadSTLActiveEmployeesForManagement = loadSTLActiveEmployeesForManagement;
+    window.loadSTLInactiveEmployees = loadSTLInactiveEmployees;
+    window.deactivateSTLEmployee = deactivateSTLEmployee;
+    window.reactivateSTLEmployee = reactivateSTLEmployee;
+    window.openEditERModal = openEditERModal;
+    window.saveERValue = saveERValue;
+    window.deleteSTLEmployeeRow = deleteSTLEmployeeRow;
+    window.addEmployeeToTable = addEmployeeToTable;
+    window.loadSTLActiveEmployees = loadSTLActiveEmployees;
+    window.removeFromSTL = removeFromSTL;
+    window.formatPagibigNumber = formatPagibigNumber;
+    window.formatTIN = formatTIN;
+    window.formatDateForDisplay = formatDateForDisplay;
 
   </script>
 </body>

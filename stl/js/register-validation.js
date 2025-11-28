@@ -90,15 +90,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // TIN validation and formatting
+    // TIN validation and formatting (XXX-XXX-XXX-0000) - Last 4 digits always 0000
     tinInput.addEventListener('input', function(e) {
-        let value = this.value.replace(/\D/g, '').slice(0, 12);
+        let value = this.value.replace(/\D/g, '').slice(0, 9);
         
-        // Format with dashes every 3 digits
+        // Format with dashes every 3 digits, then add -0000
         let formatted = '';
-        for (let i = 0; i < value.length; i++) {
-            if (i > 0 && i % 3 === 0) formatted += '-';
-            formatted += value[i];
+        if (value.length > 0) {
+            formatted = value.slice(0, 3);
+            if (value.length > 3) formatted += '-' + value.slice(3, 6);
+            if (value.length > 6) formatted += '-' + value.slice(6, 9);
+            if (value.length === 9) formatted += '-0000';
         }
         
         // Update value
@@ -106,6 +108,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set cursor to end
         this.setSelectionRange(formatted.length, formatted.length);
+        
+        // Validate
+        if (value.length === 9) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+        } else if (value.length > 0) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+        }
     });
 
     // Birthdate formatting and validation
@@ -160,12 +173,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get TIN value and format it: remove all non-digits, then add dashes
             const tinRaw = tinInput.value.replace(/\D/g, '');
             let tinFormatted = tinRaw;
-            if (tinRaw.length === 12) {
-                // Format as XXX-XXX-XXX-0000
-                tinFormatted = tinRaw.substring(0, 3) + '-' + 
-                               tinRaw.substring(3, 6) + '-' + 
-                               tinRaw.substring(6, 9) + '-' + 
-                               tinRaw.substring(9);
+            if (tinRaw.length >= 9) {
+                // Format as XXX-XXX-XXX-0000 (first 9 digits + fixed 0000)
+                const tinFirst9 = tinRaw.substring(0, 9);
+                tinFormatted = tinFirst9.substring(0, 3) + '-' + 
+                               tinFirst9.substring(3, 6) + '-' + 
+                               tinFirst9.substring(6, 9) + '-0000';
             }
 
             // Prepare form data
