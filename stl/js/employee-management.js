@@ -118,9 +118,8 @@ window.loadEmployees = function() {
             employees.forEach(emp => {
                 const row = document.createElement('tr');
                 
-                // Format values - show 0.00 format for EE and ER
+                // Format values - show 0.00 format for EE only. ER is now blank and non-editable
                 const eeValue = emp.ee ? parseFloat(emp.ee).toFixed(2) : '0.00';
-                const erValue = emp.er ? parseFloat(emp.er).toFixed(2) : '200.00';
                 
                 row.innerHTML = `
                     <td style="width: 150px;">${formatPagibigNumber(emp.pagibig_no || emp.pagibig_number || '')}</td>
@@ -128,8 +127,8 @@ window.loadEmployees = function() {
                     <td style="width: 120px; text-transform: uppercase;">${emp.last_name || ''}</td>
                     <td style="width: 120px; text-transform: uppercase;">${emp.first_name || ''}</td>
                     <td style="width: 120px; text-transform: uppercase;">${emp.middle_name || ''}</td>
-                    <td style="width: 70px; text-align: right;">${eeValue}</td>
-                    <td style="width: 70px; text-align: right; cursor: pointer;" onclick="openEditERModal('${emp.pagibig_no || emp.pagibig_number}', this)">${erValue}</td>
+                    <td style="width: 70px; text-align: right; cursor: pointer;" onclick="openEditEEModal('${emp.pagibig_no || emp.pagibig_number}', this)">${eeValue}</td>
+                    <td style="width: 70px; text-align: right;"></td>
                     <td style="width: 150px;" class="tin-cell">${formatTIN(emp.tin || '')}</td>
                     <td style="width: 100px;">${formatDateForDisplay(emp.birthdate || '')}</td>
                     <td style="width: auto; text-align: center;">
@@ -336,3 +335,9 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('employee-management.js loaded');
     window.loadEmployees();
 });
+
+// Make functions globally accessible
+window.openEditEEModal = openEditEEModal;
+window.openEditERModal = openEditERModal;
+window.saveEEValue = saveEEValue;
+window.saveERValue = saveERValue;

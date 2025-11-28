@@ -262,6 +262,35 @@ if (!isset($_SESSION['user_id'])) {
     </div>
   </div>
 
+  <!-- Edit EE Modal (STL Only) -->
+  <div class="modal fade" id="editEEModal" tabindex="-1" aria-labelledby="editEEModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title" id="editEEModalLabel">
+            <i class="fas fa-edit me-2"></i>Edit EE Value
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editEE_pagibig_no">
+          <div class="mb-3">
+            <label for="editEE_value" class="form-label">EE Amount</label>
+            <input type="number" class="form-control" id="editEE_value" step="0.01" min="0" placeholder="Enter EE amount">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-info text-white" onclick="saveEEValue()">
+            <i class="fas fa-save me-2"></i>Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Load jQuery first -->
   </div>
 
@@ -432,7 +461,7 @@ if (!isset($_SESSION['user_id'])) {
   <!-- Your custom scripts -->
   <script src="../assets/js/script.js?v=20251111"></script>
   <script src="./js/utilities.js?v=20251127-tin-no-global"></script> <!-- STL utilities -->
-  <script src="./js/employee-management.js?v=20251128c"></script> <!-- STL-specific logic -->
+  <script src="./js/employee-management.js?v=20251128d"></script> <!-- STL-specific logic -->
   <script src="./js/stl-employee-status.js?v=20251127-remove-fix-v2"></script> <!-- STL employee status management -->
   <script src="./js/register-validation.js?v=20251127-tin-format"></script> <!-- STL registration validation -->
   <script src="./js/modal-handlers.js?v=20251111"></script> <!-- STL modal handlers -->
@@ -852,6 +881,21 @@ if (!isset($_SESSION['user_id'])) {
       modal.show();
     }
 
+    // Function to open Edit EE Modal (STL Only - when EE is 0.00)
+    function openEditEEModal(pagibigNo, eeCell) {
+      const currentEE = eeCell.textContent.trim();
+      document.getElementById('editEE_pagibig_no').value = pagibigNo;
+      document.getElementById('editEE_value').value = currentEE === '0.00' ? '' : currentEE;
+      const modal = new bootstrap.Modal(document.getElementById('editEEModal'));
+      modal.show();
+      
+      // Focus on the input field
+      setTimeout(() => {
+        document.getElementById('editEE_value').focus();
+        document.getElementById('editEE_value').select();
+      }, 300);
+    }
+
     // Function to save ER value
     function saveERValue() {
       const pagibigNo = document.getElementById('editER_pagibig_no').value;
@@ -919,6 +963,91 @@ if (!isset($_SESSION['user_id'])) {
       .catch(error => {
         console.error('Error updating ER:', error);
         alert('Error updating value: ' + error.message);
+      });
+    }
+
+    // Function to save EE value (STL Only - clears ER when EE is set)
+    function saveEEValue() {
+      const pagibigNo = document.getElementById('editEE_pagibig_no').value;
+      const newEE = document.getElementById('editEE_value').value;
+      
+      // Validate input
+      if (newEE === '' || isNaN(newEE) || parseFloat(newEE) < 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Invalid Input',
+          text: 'Please enter a valid positive number',
+          confirmButtonText: 'OK'
+        });
+        return;
+      }
+      
+      // Update database
+      const formData = new FormData();
+      formData.append('pagibig_no', pagibigNo);
+      formData.append('ee', newEE);
+      
+      fetch('./includes/update_stl_ee.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Find and update both EE and ER cells in the table
+          const table = document.getElementById('selectedEmployeesTable');
+          const tbody = table.querySelector('tbody');
+          const rows = tbody.querySelectorAll('tr');
+          
+          for (let row of rows) {
+            const pagibigCell = row.querySelector('td:first-child');
+            if (pagibigCell) {
+              // Compare only digits to handle formatted vs unformatted numbers
+              const cellDigits = pagibigCell.textContent.replace(/\D/g, '');
+              const paramDigits = pagibigNo.replace(/\D/g, '');
+              
+              if (cellDigits === paramDigits) {
+                // Update EE cell (6th column)
+                const eeCell = row.querySelector('td:nth-child(6)');
+                const formattedEE = parseFloat(newEE).toFixed(2);
+                eeCell.textContent = formattedEE;
+                eeCell.style.cursor = 'pointer';
+                eeCell.style.textAlign = 'right';
+                eeCell.style.width = '70px';
+                eeCell.onclick = function() { openEditEEModal(pagibigNo, this); };
+                break;
+              }
+            }
+          }
+          
+          // Close modal and show success message
+          const modal = bootstrap.Modal.getInstance(document.getElementById('editEEModal'));
+          modal.hide();
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'EE value updated successfully!',
+            showConfirmButton: false,
+            timer: 2000
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to save: ' + (data.message || 'Unknown error'),
+            confirmButtonText: 'OK'
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error updating EE:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error updating value: ' + error.message,
+          confirmButtonText: 'OK'
+        });
       });
     }
 
@@ -1719,7 +1848,9 @@ if (!isset($_SESSION['user_id'])) {
     window.deactivateSTLEmployee = deactivateSTLEmployee;
     window.reactivateSTLEmployee = reactivateSTLEmployee;
     window.openEditERModal = openEditERModal;
+    window.openEditEEModal = openEditEEModal;
     window.saveERValue = saveERValue;
+    window.saveEEValue = saveEEValue;
     window.deleteSTLEmployeeRow = deleteSTLEmployeeRow;
     window.addEmployeeToTable = addEmployeeToTable;
     window.loadSTLActiveEmployees = loadSTLActiveEmployees;
