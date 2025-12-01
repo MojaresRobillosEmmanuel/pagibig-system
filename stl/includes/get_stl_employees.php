@@ -22,6 +22,7 @@ try {
     
     // Base query - ONLY get employees from selected_stl table (the working list)
     // Join with employees table to get full details
+    // Note: ER is set to 0 for STL system as it only uses EE values
     $sql = "SELECT 
         e.id,
         e.pagibig_number,
@@ -32,7 +33,7 @@ try {
         e.tin,
         e.birthdate,
         COALESCE(ss.ee, e.ee, 0) as ee,
-        COALESCE(ss.er, e.er, 0) as er,
+        0 as er,
         e.status
     FROM 
         selected_stl ss

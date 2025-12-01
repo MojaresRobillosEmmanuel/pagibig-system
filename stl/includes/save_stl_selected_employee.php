@@ -24,7 +24,7 @@ try {
     
     $pagibig_number = $data['pagibig_number'];
     $id_number = $data['id_number'];
-    $er = isset($data['er']) ? floatval($data['er']) : 200;
+    $er = 0; // STL system does not use ER values, always set to 0
     $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
     
     // Check if already exists

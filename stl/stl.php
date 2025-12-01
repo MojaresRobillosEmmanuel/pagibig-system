@@ -332,7 +332,7 @@ if (!isset($_SESSION['user_id'])) {
           </div>
           <div class="mb-3">
             <label for="yearInput" class="form-label">Enter Year</label>
-            <input type="number" class="form-control" id="yearInput" required min="2020" max="2099">
+            <input type="text" class="form-control" id="yearInput" required placeholder="YYYY">
           </div>
         </div>
         <div class="modal-footer">
@@ -446,6 +446,47 @@ if (!isset($_SESSION['user_id'])) {
     </div>
   </div>
 
+  <!-- STL Summary Report Modal -->
+  <div class="modal fade" id="stlSummaryModal" tabindex="-1" aria-labelledby="stlSummaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="stlSummaryModalLabel">
+            <i class="fas fa-chart-bar me-2"></i>Summary of Short-Term Loan (STL)
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="stlSummaryLoadingSpinner" class="text-center">
+            <div class="spinner-border text-danger" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div class="table-responsive" id="stlSummaryContainer" style="display: none;">
+            <table class="table table-striped table-hover">
+              <thead class="table-danger">
+                <tr>
+                  <th>YEAR - MONTH</th>
+                  <th class="text-center"># OF BORROWERS</th>
+                  <th class="text-end">DEDUCTED AMOUNT</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="stlSummaryTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info" id="btnPopulateFromFiles" title="Scan and populate from existing Excel files">
+            <i class="fas fa-sync-alt me-1"></i>Populate from Files
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -461,6 +502,17 @@ if (!isset($_SESSION['user_id'])) {
   <!-- Your custom scripts -->
   <script src="../assets/js/script.js?v=20251111"></script>
   <script src="./js/utilities.js?v=20251127-tin-no-global"></script> <!-- STL utilities -->
+  
+  <!-- Stub functions that will be fully defined later -->
+  <script>
+    // Stub declarations for functions that will be defined in inline scripts
+    // This prevents ReferenceError when employee-management.js tries to use them
+    window.openEditEEModal = window.openEditEEModal || function() {};
+    window.openEditERModal = window.openEditERModal || function() {};
+    window.saveEEValue = window.saveEEValue || function() {};
+    window.saveERValue = window.saveERValue || function() {};
+  </script>
+  
   <script src="./js/employee-management.js?v=20251128d"></script> <!-- STL-specific logic -->
   <script src="./js/stl-employee-status.js?v=20251127-remove-fix-v2"></script> <!-- STL employee status management -->
   <script src="./js/register-validation.js?v=20251127-tin-format"></script> <!-- STL registration validation -->
@@ -1235,7 +1287,7 @@ if (!isset($_SESSION['user_id'])) {
         }
       }
       
-      // Create new row with ER=200
+      // Create new row with ER empty
       const newRow = document.createElement('tr');
       newRow.innerHTML = `
         <td>${formatPagibigNumber(employee.pagibig_number || '')}</td>
@@ -1243,14 +1295,10 @@ if (!isset($_SESSION['user_id'])) {
         <td>${employee.last_name || ''}</td>
         <td>${employee.first_name || ''}</td>
         <td>${employee.middle_name || ''}</td>
-        <td style="text-align: right;">0.00</td>
-        <td style="cursor: pointer;" onclick="openEditERModal('${employee.pagibig_number}', this)">200.00</td>
+        <td style="width: 70px; text-align: right;"></td>
         <td>${formatTIN(employee.tin || '')}</td>
         <td>${employee.birthdate || ''}</td>
         <td>
-          <button class="btn btn-sm btn-danger" onclick="removeFromSTL('${employee.pagibig_number}', '${employee.last_name}, ${employee.first_name}');">
-            <i class="fas fa-trash"></i> Remove
-          </button>
         </td>
       `;
       
@@ -1275,8 +1323,7 @@ if (!isset($_SESSION['user_id'])) {
         },
         body: JSON.stringify({
           pagibig_number: employee.pagibig_number,
-          id_number: employee.id_number,
-          er: 200
+          id_number: employee.id_number
         })
       })
       .then(res => res.json())
@@ -1452,11 +1499,228 @@ if (!isset($_SESSION['user_id'])) {
       }
     }
 
+    // Save STL Summary to Database
+    function saveSummaryToDatabase(filename, month, year, numBorrowers, totalAmount) {
+        return fetch('./includes/save_stl_summary.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                filename: filename,
+                month: month,
+                year: year,
+                num_borrowers: numBorrowers,
+                total_deducted_amount: totalAmount
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log('STL Summary saved:', data);
+            return data;
+        })
+        .catch(error => {
+            console.error('Error saving summary:', error);
+            return { status: 'error', message: error.message };
+        });
+    }
+
+    // Function to load STL Summary
+    function loadSTLSummary() {
+      const loadingSpinner = document.getElementById('stlSummaryLoadingSpinner');
+      const container = document.getElementById('stlSummaryContainer');
+      const tableBody = document.getElementById('stlSummaryTableBody');
+      
+      if (!tableBody) {
+        console.error('stlSummaryTableBody element not found');
+        return;
+      }
+      
+      loadingSpinner.style.display = 'block';
+      container.style.display = 'none';
+      tableBody.innerHTML = '';
+
+      fetch('./includes/get_stl_summary.php')
+        .then(res => res.json())
+        .then(data => {
+          loadingSpinner.style.display = 'none';
+          
+          if (data.status !== 'success' || !data.data || data.data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No STL data available</td></tr>';
+            container.style.display = 'block';
+            return;
+          }
+
+          tableBody.innerHTML = '';
+
+          data.data.forEach(summary => {
+            const row = document.createElement('tr');
+            const formattedAmount = parseFloat(summary.deducted_amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            
+            row.innerHTML = `
+              <td><strong>${summary.year_month || 'N/A'}</strong></td>
+              <td class="text-center"><span class="badge bg-info">${summary.num_borrowers || 0}</span></td>
+              <td class="text-end"><strong>₱${formattedAmount}</strong></td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-success" title="Download Excel" onclick="downloadSTLSummaryFile('${summary.filename}', '${summary.month_name}', ${summary.year})">
+                  <i class="fas fa-download"></i> Download
+                </button>
+                <button class="btn btn-sm btn-primary" title="View Details" onclick="viewSTLSummaryDetails('${summary.year_month}', ${summary.num_borrowers}, ${summary.deducted_amount})">
+                  <i class="fas fa-eye"></i> Details
+                </button>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+
+          container.style.display = 'block';
+        })
+        .catch(error => {
+          console.error('Error loading STL summary:', error);
+          loadingSpinner.style.display = 'none';
+          tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading summary data</td></tr>';
+          container.style.display = 'block';
+        });
+    }
+
+    // Function to populate STL Summary from existing files
+    function populateSTLSummaryFromFiles() {
+      const btnPopulate = document.getElementById('btnPopulateFromFiles');
+      const originalText = btnPopulate.innerHTML;
+      
+      btnPopulate.disabled = true;
+      btnPopulate.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Populating...';
+      
+      fetch('./includes/populate_stl_summary.php')
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            alert(`Populated ${data.data.populated} file(s) from existing Excel files.`);
+            // Reload the summary table
+            loadSTLSummary();
+          } else {
+            alert('Error: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error populating summary:', error);
+          alert('Error populating from files: ' + error.message);
+        })
+        .finally(() => {
+          btnPopulate.disabled = false;
+          btnPopulate.innerHTML = originalText;
+        });
+    }
+
+    // Download STL Excel file for specific month from backup
+    function downloadSTLSummaryFile(filename, month, year) {
+      // Use the download endpoint that serves from backup folder
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = './includes/download_stl_excel.php';
+      
+      const monthInput = document.createElement('input');
+      monthInput.type = 'hidden';
+      monthInput.name = 'month';
+      monthInput.value = month;
+      
+      const yearInput = document.createElement('input');
+      yearInput.type = 'hidden';
+      yearInput.name = 'year';
+      yearInput.value = year;
+      
+      form.appendChild(monthInput);
+      form.appendChild(yearInput);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    }
+
+    // Regenerate STL Excel file from database and download
+    function regenerateAndDownloadSTL(filename, month, year) {
+      Swal.fire({
+        title: 'Regenerating File',
+        html: 'Regenerating from database records...',
+        icon: 'info',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      
+      fetch('./includes/regenerate_stl_excel.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          month: month,
+          year: year
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          Swal.close();
+          
+          // Download the regenerated file
+          const link = document.createElement('a');
+          link.href = '../generated excel files/' + data.filename;
+          link.download = data.filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          Swal.fire({
+            title: 'Success!',
+            html: `File regenerated and downloaded successfully<br><small>${data.record_count} records, ₱${parseFloat(data.total_ee).toFixed(2)}</small>`,
+            icon: 'success'
+          });
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: data.message,
+            icon: 'error'
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Failed to regenerate file',
+          icon: 'error'
+        });
+      });
+    }
+
+    // View STL Summary Details for specific month
+    function viewSTLSummaryDetails(yearMonth, borrowers, amount) {
+      const formattedAmount = parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      
+      Swal.fire({
+        title: 'STL Summary - ' + yearMonth,
+        html: `
+          <div style="text-align: left; padding: 20px;">
+            <p><strong>Month & Year:</strong> ${yearMonth}</p>
+            <p><strong>Number of Borrowers:</strong> <span style="color: #007bff; font-weight: bold; font-size: 18px;">${borrowers}</span></p>
+            <p><strong>Total Deducted Amount:</strong> <span style="color: #28a745; font-weight: bold; font-size: 18px;">₱${formattedAmount}</span></p>
+          </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'Close',
+        confirmButtonColor: '#dc3545',
+        width: '500px'
+      });
+    }
+
     // Setup modal event listeners
     document.addEventListener('DOMContentLoaded', function() {
       const activeEmployeesModal = document.getElementById('activeEmployeesModal');
       const activeEmployeesManagementModal = document.getElementById('activeEmployeesManagementModal');
       const inactiveEmployeesModal = document.getElementById('inactiveEmployeesModal');
+      const stlSummaryModal = document.getElementById('stlSummaryModal');
       
       if (activeEmployeesModal) {
         activeEmployeesModal.addEventListener('show.bs.modal', loadSTLActiveEmployees);
@@ -1467,11 +1731,28 @@ if (!isset($_SESSION['user_id'])) {
       if (inactiveEmployeesModal) {
         inactiveEmployeesModal.addEventListener('show.bs.modal', loadSTLInactiveEmployees);
       }
+      if (stlSummaryModal) {
+        stlSummaryModal.addEventListener('show.bs.modal', loadSTLSummary);
+      }
+      
+      // Add event listener for populate button
+      const btnPopulateFromFiles = document.getElementById('btnPopulateFromFiles');
+      if (btnPopulateFromFiles) {
+        btnPopulateFromFiles.addEventListener('click', populateSTLSummaryFromFiles);
+      }
     });
   </script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Add input validation for yearInput - only allow digits
+        const yearInput = document.getElementById('yearInput');
+        if (yearInput) {
+            yearInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+        }
+
         const generateExcelBtn = document.getElementById('btnGenerateExcel');
         if (generateExcelBtn) {
             generateExcelBtn.addEventListener('click', function() {
@@ -1480,6 +1761,12 @@ if (!isset($_SESSION['user_id'])) {
 
                 if (!month || !year) {
                     alert('Please select both month and year');
+                    return;
+                }
+
+                // Validate year is a 4-digit number
+                if (!/^\d{4}$/.test(year) || year < 1890) {
+                    alert('Please enter a valid year (1890 or later)');
                     return;
                 }
 
@@ -1606,15 +1893,100 @@ if (!isset($_SESSION['user_id'])) {
                     // Clean year (remove any .00 or decimal parts) and add _Stl suffix
                     const yearClean = String(year).replace(/\.00$|\..*$/, '');
                     const filename = `${month}_${yearClean}_Stl.xls`;
-                    XLSX.writeFile(wb, filename);
+                    
+                    // Calculate totals for summary
+                    let totalNumBorrowers = 0;
+                    let totalAmount = 0;
+                    
+                    rows.forEach(row => {
+                      const cells = row.querySelectorAll('td');
+                      if (cells.length >= 6) {
+                        totalNumBorrowers++;
+                        const eeText = cells[5].textContent.trim();
+                        if (eeText && !isNaN(Number(eeText))) {
+                          totalAmount += Number(eeText);
+                        }
+                      }
+                    });
 
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('saveModal'));
-                    if (modal) {
-                        modal.hide();
+                    // Generate Excel file in browser and send to server for backup
+                    try {
+                      // Create a temporary download to get file content, then send to server
+                      const wbout = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+                      const blob = new Blob([wbout], {type: 'application/vnd.ms-excel'});
+                      
+                      // Create FormData with file upload for backup only
+                      const formData = new FormData();
+                      formData.append('month', month);
+                      formData.append('year', yearClean);
+                      formData.append('num_borrowers', totalNumBorrowers);
+                      formData.append('total_deducted_amount', totalAmount);
+                      formData.append('file', blob, filename);
+                      
+                      // Send to server for backup saving (user will choose primary location)
+                      fetch('./includes/generate_and_save_stl_excel.php', {
+                        method: 'POST',
+                        body: formData
+                      })
+                      .then(res => {
+                        if (!res.ok) {
+                          throw new Error(`HTTP error! status: ${res.status}`);
+                        }
+                        return res.text().then(text => {
+                          try {
+                            return JSON.parse(text);
+                          } catch (e) {
+                            console.error('Invalid JSON response:', text);
+                            throw new Error('Invalid server response');
+                          }
+                        });
+                      })
+                      .then(data => {
+                        if (data.status === 'success') {
+                          // Trigger browser download dialog - user chooses where to save
+                          const link = document.createElement('a');
+                          link.href = URL.createObjectURL(blob);
+                          link.download = filename;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(link.href);
+                          
+                          // Close modal
+                          const modal = bootstrap.Modal.getInstance(document.getElementById('saveModal'));
+                          if (modal) {
+                            modal.hide();
+                          }
+                          
+                          alert('Excel file generated! Backup saved automatically.\nFile download started - choose where to save.');
+                        } else {
+                          alert('Error saving backup: ' + (data.message || 'Unknown error'));
+                        }
+                      })
+                      .catch(error => {
+                        console.error('Error saving backup:', error);
+                        // Still allow download even if backup save fails
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(link.href);
+                        
+                        alert('File downloaded. Warning: Backup save failed - Error: ' + error.message);
+                      })
+                      .finally(() => {
+                        generateExcelBtn.disabled = false;
+                        generateExcelBtn.textContent = 'Generate Excel';
+                      });
+                      
+                    } catch (error) {
+                      console.error('Error generating Excel:', error);
+                      alert('Error generating Excel file: ' + error.message);
+                      generateExcelBtn.disabled = false;
+                      generateExcelBtn.textContent = 'Generate Excel';
                     }
-
-                    alert('Excel file has been generated successfully!');
                 } catch (error) {
                     console.error('Error:', error);
                     alert('An error occurred while generating the Excel file');
@@ -1858,6 +2230,12 @@ if (!isset($_SESSION['user_id'])) {
     window.formatPagibigNumber = formatPagibigNumber;
     window.formatTIN = formatTIN;
     window.formatDateForDisplay = formatDateForDisplay;
+    window.loadSTLSummary = loadSTLSummary;
+    window.populateSTLSummaryFromFiles = populateSTLSummaryFromFiles;
+    window.downloadSTLSummaryFile = downloadSTLSummaryFile;
+    window.viewSTLSummaryDetails = viewSTLSummaryDetails;
+    window.saveSummaryToDatabase = saveSummaryToDatabase;
+    window.regenerateAndDownloadSTL = regenerateAndDownloadSTL;
 
   </script>
 </body>

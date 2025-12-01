@@ -42,6 +42,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-user-times me-2"></i> Inactive Employees
         </a>
 
+        <!-- STL Summary Report Button -->
+        <a href="#" class="menu-item btn w-100 d-flex align-items-center" 
+           style="background-color: #dc3545; color: white; padding: 12px 20px; border-radius: 8px;"
+           data-bs-toggle="modal" data-bs-target="#stlSummaryModal">
+            <i class="fas fa-chart-bar me-2"></i> STL Summary
+        </a>
+
         <!-- Spacer -->
         <div class="flex-grow-1"></div>
 

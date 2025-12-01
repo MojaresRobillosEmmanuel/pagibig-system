@@ -115,24 +115,32 @@ window.loadEmployees = function() {
             }
             
             // Populate table with employees
-            employees.forEach(emp => {
+            employees.forEach((emp, index) => {
                 const row = document.createElement('tr');
                 
-                // Format values - show 0.00 format for EE only. ER is now blank and non-editable
-                const eeValue = emp.ee ? parseFloat(emp.ee).toFixed(2) : '0.00';
+                // Ensure all fields exist, even if empty
+                const pagibigNo = emp.pagibig_no || emp.pagibig_number || '';
+                const idNo = emp.id_no || emp.id_number || '';
+                const lastName = emp.last_name || '';
+                const firstName = emp.first_name || '';
+                const middleName = emp.middle_name || '';
+                const eeValue = emp.ee && parseFloat(emp.ee) > 0 ? parseFloat(emp.ee).toFixed(2) : '0.00';
+                const tinFormatted = formatTIN(emp.tin || '');
+                const birthdateFormatted = formatDateForDisplay(emp.birthdate || '');
+                const fullName = lastName + ', ' + firstName;
                 
                 row.innerHTML = `
-                    <td style="width: 150px;">${formatPagibigNumber(emp.pagibig_no || emp.pagibig_number || '')}</td>
-                    <td style="width: 80px;">${emp.id_no || emp.id_number || ''}</td>
-                    <td style="width: 120px; text-transform: uppercase;">${emp.last_name || ''}</td>
-                    <td style="width: 120px; text-transform: uppercase;">${emp.first_name || ''}</td>
-                    <td style="width: 120px; text-transform: uppercase;">${emp.middle_name || ''}</td>
-                    <td style="width: 70px; text-align: right; cursor: pointer;" onclick="openEditEEModal('${emp.pagibig_no || emp.pagibig_number}', this)">${eeValue}</td>
+                    <td style="width: 150px;">${formatPagibigNumber(pagibigNo)}</td>
+                    <td style="width: 80px;">${idNo}</td>
+                    <td style="width: 120px; text-transform: uppercase;">${lastName}</td>
+                    <td style="width: 120px; text-transform: uppercase;">${firstName}</td>
+                    <td style="width: 120px; text-transform: uppercase;">${middleName}</td>
+                    <td style="width: 70px; text-align: right; cursor: pointer;" onclick="openEditEEModal('${pagibigNo}', this)">${eeValue}</td>
                     <td style="width: 70px; text-align: right;"></td>
-                    <td style="width: 150px;" class="tin-cell">${formatTIN(emp.tin || '')}</td>
-                    <td style="width: 100px;">${formatDateForDisplay(emp.birthdate || '')}</td>
+                    <td style="width: 150px;" class="tin-cell">${tinFormatted}</td>
+                    <td style="width: 100px;">${birthdateFormatted}</td>
                     <td style="width: auto; text-align: center;">
-                        <button class="btn btn-sm btn-danger" onclick="removeFromSTL('${emp.pagibig_no || emp.pagibig_number}', '${emp.last_name}, ${emp.first_name}')" title="Remove from STL">
+                        <button class="btn btn-sm btn-danger" onclick="removeFromSTL('${pagibigNo}', '${fullName}')" title="Remove from STL">
                             <i class="fas fa-trash"></i> Remove
                         </button>
                     </td>
@@ -335,9 +343,3 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('employee-management.js loaded');
     window.loadEmployees();
 });
-
-// Make functions globally accessible
-window.openEditEEModal = openEditEEModal;
-window.openEditERModal = openEditERModal;
-window.saveEEValue = saveEEValue;
-window.saveERValue = saveERValue;
